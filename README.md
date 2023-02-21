@@ -4,8 +4,9 @@ _iocsearcher_ is a Python library and command-line tool to extract
 indicators of compromise (IOCs),
 also known as cyber observables,
 from HTML, PDF, and text files.
-It can identify both defanged (e.g., IP address 1[.]2[.]3.[4]) and
-unmodified IOCs (e.g., IP address 1.2.3.4).
+It can identify both defanged
+(e.g., URL hx<area>xp://<area>example[DOT]com) and
+unmodified IOCs (e.g., URL ht<area>tp://<area>example.com).
 
 ## Supported IOCs
 
@@ -15,16 +16,16 @@ _iocsearcher_ can extract the following IOC types:
 - Domain names (fqdn)
 - IP addresses (ip)
 - IP subnets (ipNet)
-- Hashes (fileMd5,fileSha1,fileSha256)
+- Hashes (fileMd5, fileSha1, fileSha256)
 - Email addresses (email)
 - Copyright strings (copyright)
 - CVE vulnerability identifiers (cve)
 - Tor v3 addresses (onionAddress)
-- Social network handles (facebookHandle,githubHandle,instagramHandle,
-linkedinHandle,pinterestHandle,telegramHandle,twitterHandle,whatsappHandle,
-youtubeHandle,youtubeChannel)
+- Social network handles (facebookHandle, githubHandle, instagramHandle,
+linkedinHandle, pinterestHandle, telegramHandle, twitterHandle, whatsappHandle,
+youtubeHandle, youtubeChannel)
 - Advertisement/analytics identifiers (googleAdsense, googleAnalytics, googleTagManager)
-- Blockchain addresses (bitcoin,bitcoincash,dashcoin,dogecoin,ethereum,litecoin,monero,tezos,zcash)
+- Blockchain addresses (bitcoin, bitcoincash, dashcoin, dogecoin, ethereum, litecoin, monero, tezos, zcash)
 - Payment addresses (webmoney)
 - Chinese Internet Content Provider licenses (icp)
 - Bank account numbers (iban)
@@ -47,7 +48,7 @@ pip install iocsearcher
 
 ## Command Line Usage
 
-To find IOCs in a given file just provide the -f (--file) option.
+To find IOCs in a given file just provide the _-f (--file)_ option.
 By default, found IOCs are printed to stdout,
 defanged IOCs are rearmed, and
 IOCs are deduplicated so they only appear once.
@@ -58,7 +59,8 @@ iocsearcher -f page.html
 iocsearcher -f input.txt
 ~~~
 
-You can use the -o (--output) option to place IOCs to a file instead of stdout:
+You can use the _-o (--output)_ option to place IOCs to a file instead
+of stdout:
 
 ~~~ sh
 iocsearcher -f file.pdf -o iocs.txt
@@ -67,17 +69,17 @@ iocsearcher -f file.pdf -o iocs.txt
 By default all regexp are applied to the input.
 If you are only interested in some specific IOC types,
 it is more efficient to specify those using
-the -t (--target) option, which can be applied multiple times:
+the _-t (--target)_ option, which can be applied multiple times:
 
 ~~~ sh
 iocsearcher -f file.pdf -t url -t email
 ~~~
 
 You can also search for IOCs in all files in a directory using
-the -d (--dir) option.
+the _-d (--dir)_ option.
 IOCs extracted from each file will be placed in their own .iocs file.
 You can also place all IOCs founds across the input files
-in the same output file by also adding the -o (--output) option:
+in the same output file by also adding the _-o (--output)_ option:
 
 ~~~ sh
 iocsearcher -d directoryWithFiles -o all.iocs
@@ -85,28 +87,29 @@ iocsearcher -d directoryWithFiles -o all.iocs
 
 In HTML files, only the readable text is examined
 (i.e., think of the text shown by Firefox's Reader View).
-If you want to scan the whole HTML content you can use the -r (--raw) option:
+If you want to scan the whole HTML content you can use the
+_-r (--raw)_ option:
 
 ~~~ sh
 iocsearcher -f page.html -r
 ~~~
 
 If you have a file that you want to interpret as text avoiding
-filetype detection, you can use the -F (--forcetext) option:
+filetype detection, you can use the _-F (--forcetext)_ option:
 
 ~~~ sh
 iocsearcher -f input.txt -F
 ~~~
 
 You can store the text extracted from a PDF/HTML file using the
--T (--text) option, which will produce a .text file for each input file:
+_-T (--text)_ option, which will produce a .text file for each input file:
 
 ~~~ sh
 iocsearcher -f file.pdf -T
 ~~~
 
 By default IOCs are deduplicated, you can instead output the offset of
-each IOC without deduplication by using the -v (--verbose) option:
+each IOC without deduplication by using the _-v (--verbose)_ option:
 
 ~~~ sh
 iocsearcher -f file.pdf -v
@@ -137,21 +140,22 @@ python3
 ~~~
 
 You can also open a document without needing to provide its type,
-get its text, and then use a _Searcher_ object to search for IOCs in the text:
+get its text, and then use a _Searcher_ object to search for IOCs in the text.
+For example, if you have a file called _file.pdf_ you can do:
 
 ~~~ sh
 python3
 >>> import iocsearcher
 >>> from iocsearcher.document import open_document
 >>> from iocsearcher.searcher import Searcher
->>> doc = open_document(filepath)
+>>> doc = open_document("file.pdf")
 >>> text,_ = doc.get_text() if doc is not None else ""
 >>> searcher = Searcher()
 >>> searcher.search_data(text)
 ~~~
 
 If the file is not a PDF, HTML, or text document,
-then _open_document_ throws a warning and returns None
+_open_document_ throws a warning and returns None
 
 ## Defang and Rearm
 
@@ -161,12 +165,11 @@ IP addresses, and email addresses.
 This practice helps to prevent users from inadvertently clicking on a
 malicious indicator and start a network connection to it.
 Defanged indicators do not follow the indicator specification and thus
-required relaxed regular expressions to detect them.
+require relaxed regular expressions to detect them.
 
 _iocsearcher_ supports some popular defang operations
 and rearms the IOCs by default so that deduplication works even if the
 same IOC has been defanged in different ways.
-
 However, it is not possible to support all defang operations,
 as every analyst can come up with their own.
 If you think _iocsearcher_ is missing support for some popular
@@ -174,14 +177,14 @@ defang operation, let us know by providing pointers to reports that use them.
 
 ## Customizing the Regular Expressions
 
-The default regular expressions used by _iocsearcher_ are stored in
-_data/patterns.ini_
-
+_iocsearcher_ reads its regular expressions from an INI configuration file.
 If you want to modify a regexp, add a regexp,
 change the IOC type associated to a regexp, or disable validation
-for an existing regexp, you can create a copy of _patterns.ini_,
+for an existing regexp, you can create a copy of the
+[patterns.ini](https://github.com/malicialab/iocsearcher/blob/main/iocsearcher/data/patterns.ini)
+file in the GitHub repo,
 edit your copy, and pass it as input to _iocsearcher_
-using the -P (--patterns) option:
+using the _-P (--patterns)_ option:
 
 ~~~ sh
 iocsearcher -f file.pdf -P mypatterns.ini
@@ -215,8 +218,10 @@ The design and evaluation of _iocsearcher_ and the comparison with prior
 IOC extraction tools are detailed in our
 [FGCS journal paper](https://arxiv.org/abs/2208.00042):
 
-> Juan Caballero, Gibran Gomez, Srdjan Matic, Gustavo Sánchez, Silvia Sebastián, and Arturo Villacañas.
-GoodFATR: A Platform for Automated Threat Report Collection and IOC Extraction.
+> Juan Caballero, Gibran Gomez, Srdjan Matic, Gustavo Sánchez,
+Silvia Sebastián, and Arturo Villacañas.<br>
+GoodFATR: A Platform for Automated Threat Report Collection and
+IOC Extraction.<br>
 In Future Generation Computer Systems, 2023.
 
 # Contributors
