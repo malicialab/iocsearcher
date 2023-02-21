@@ -1,0 +1,7 @@
+beautifulsoup4
+coinaddrvalidator
+lxml
+pdfminer.six
+phonenumbers
+python-magic
+readabilipy

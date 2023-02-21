@@ -1,0 +1,36 @@
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iocsearcher"
+version = "1.0.0"
+description = "A library and command line tool for extracting indicators of compromise (IOCs) from security reports in PDF, HTML, or text formats."
+readme = "README.md"
+authors = [{ name = "MaliciaLab" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+		"Topic :: Security",
+]
+keywords = ["ioc", "indicator of compromise", "cyber observable", "security", "threat reports", "pdf", "html"]
+dependencies = [
+    "beautifulsoup4",
+    "coinaddrvalidator",
+    "langdetect",
+    "lxml",
+    "pdfminer.six",
+    "phonenumbers",
+    "python-magic",
+    "readabilipy",
+]
+
+[project.optional-dependencies]
+
+[project.urls]
+Homepage = "https://github.com/malicialab/iocsearcher"
+
+[project.scripts]
+iocsearcher = "iocsearcher.__main__:main"
