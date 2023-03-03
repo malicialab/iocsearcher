@@ -260,7 +260,10 @@ class Searcher:
         # Validate checksum
         try:
             result = coinaddrvalidator.validate(addr_type, s)
-            return result.valid and (result.network == network_type)
+            if network_type is not None:
+                return result.valid and (result.network == network_type)
+            else:
+                return result.valid
         except (ValueError,TypeError):
             return False
 
@@ -378,6 +381,12 @@ class Searcher:
     def is_valid_linkedinHandle(s):
         ''' Check if given string is a valid LinkedIn handle '''
         return True
+
+    @staticmethod
+    def is_valid_ripple(s, network_type="main"):
+        ''' Check if given string is a valid Ripple address
+            by validating its checksum '''
+        return __class__.is_valid_coinaddr(s, 'ripple', network_type=None)
 
     @staticmethod
     def is_valid_youtubeHandle(s):
