@@ -598,11 +598,16 @@ class Searcher:
         ''' Apply targets regexps to input data,
             Returns list of (type, rearmed_value, start_offset, raw_value) '''
         results = []
-        for ioc_name, regexes in self.patterns.items():
-            # If not a target, skip this IOC name
-            if (targets is not None) and (ioc_name not in targets):
+        # Select targets
+        if targets is None:
+            targets = self.patterns.keys()
+        for ioc_name in targets:
+            # Get regular expressions for target
+            regexes = self.patterns.get(ioc_name, None)
+            if regexes is None:
+                log.warning("No regexp for target '%s'" % ioc_name)
                 continue
-            # Iterate on regexp for IOC name
+            # Iterate on regexps for target
             for ioc_regex in regexes:
                 # Apply regex to data
                 matches = ioc_regex.finditer(data)
