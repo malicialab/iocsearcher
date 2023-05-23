@@ -212,6 +212,21 @@ We encourage you to read our paper if you have questions about how
 _iocsearcher_ compares with the above tools and to try
 the above tools if _iocsearcher_ does not meet your goals.
 
+## Filtering
+
+Technically speaking, _iocsearcher_ is an indicator extraction tool, 
+i.e., it extracts indicators regardless if they are benign or malicious.
+Currently, _iocsearcher_, 
+similar to most other tools mentioned above, 
+does not differentiate malicious indicators (i.e., IOCs) from benign indicators.
+For example, it will extract all URLs in the given input, 
+regardless if they are malicious or benign.
+
+Filtering of benign indicators is typically application-specific, 
+so we prefer to keep it as a separate step. 
+Such filtering is oftentimes performed with blocklists or through
+Natural Language Processing (NLP) techniques.
+
 ## References
 
 The design and evaluation of _iocsearcher_ and the comparison with prior
