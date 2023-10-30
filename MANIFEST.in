@@ -1,1 +1,2 @@
 include iocsearcher/data/*
+include iocsearcher/monero/*

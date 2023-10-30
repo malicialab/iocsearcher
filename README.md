@@ -8,16 +8,23 @@ It can identify both defanged
 (e.g., URL hx<area>xp://<area>example[DOT]com) and
 unmodified IOCs (e.g., URL ht<area>tp://<area>example.com).
 
+## Installation
+
+~~~ sh
+pip install iocsearcher
+~~~
+
 ## Supported IOCs
 
 _iocsearcher_ can extract the following IOC types:
 
 - URLs (url)
 - Domain names (fqdn)
-- IP addresses (ip)
-- IP subnets (ipNet)
-- Hashes (fileMd5, fileSha1, fileSha256)
+- IP addresses (ip4, ip6)
+- IP subnets (ip4Net)
+- Hashes (md5, sha1, sha256)
 - Email addresses (email)
+- Phone numbers (phoneNumber)
 - Copyright strings (copyright)
 - CVE vulnerability identifiers (cve)
 - Tor v3 addresses (onionAddress)
@@ -25,7 +32,7 @@ _iocsearcher_ can extract the following IOC types:
 linkedinHandle, pinterestHandle, telegramHandle, twitterHandle, whatsappHandle,
 youtubeHandle, youtubeChannel)
 - Advertisement/analytics identifiers (googleAdsense, googleAnalytics, googleTagManager)
-- Blockchain addresses (bitcoin, bitcoincash, dashcoin, dogecoin, ethereum, litecoin, monero, tezos, zcash)
+- Blockchain addresses (bitcoin, bitcoincash, cardano, dashcoin, dogecoin, ethereum, litecoin, monero, ripple, tezos, tronix, zcash)
 - Payment addresses (webmoney)
 - Chinese Internet Content Provider licenses (icp)
 - Bank account numbers (iban)
@@ -33,18 +40,6 @@ youtubeHandle, youtubeChannel)
 - Universal unique identifiers (uuid)
 - Android package name (packageName)
 - Spanish NIF identifiers (nif)
-
-## Installation
-
-~~~ sh
-pip install iocsearcher
-~~~
-
-If you get an error, try installing Python developer tools first:
-~~~ sh
-sudo apt install python3-dev
-pip install iocsearcher
-~~~
 
 ## Command Line Usage
 
@@ -115,6 +110,12 @@ each IOC without deduplication by using the _-v (--verbose)_ option:
 iocsearcher -f file.pdf -v
 ~~~
 
+You can also produce a ranking of IOCs by number of appearances
+(without deduplication) by using the _-C (--count)_ option:
+
+~~~ sh
+iocsearcher -f file.pdf -C -o rank.iocs
+~~~
 
 ## Library Usage
 
@@ -195,7 +196,8 @@ if a group exists, and the whole match if the regexp has no groups.
 
 ## Related Tools
 
-There exist multiple other open-source IOC extraction tools.
+There exist multiple other open-source IOC extraction tools
+and we developed iocsearcher to improve on those.
 In our [FGCS journal paper](https://arxiv.org/abs/2208.00042)
 we propose a novel evaluation methodology for IOC extraction tools and
 apply it to compare _iocsearcher_ with the following tools:
@@ -208,24 +210,35 @@ apply it to compare _iocsearcher_ with the following tools:
 - [IOC Extract](https://github.com/InQuest/python-iocextract) (Python)
 - [IOC-Extractor](https://github.com/ninoseki/ioc-extractor) (Python)
 
+We believe the results show _iocsearcher_ performs generally best,
+but that is up to you to judge.
 We encourage you to read our paper if you have questions about how
 _iocsearcher_ compares with the above tools and to try
 the above tools if _iocsearcher_ does not meet your goals.
 
 ## Filtering
 
-Technically speaking, _iocsearcher_ is an indicator extraction tool, 
+Technically speaking, _iocsearcher_ is an indicator extraction tool,
 i.e., it extracts indicators regardless if they are benign or malicious.
-Currently, _iocsearcher_, 
-similar to most other tools mentioned above, 
+Currently, _iocsearcher_,
+similar to most other tools mentioned above,
 does not differentiate malicious indicators (i.e., IOCs) from benign indicators.
-For example, it will extract all URLs in the given input, 
+For example, it will extract all URLs in the given input,
 regardless if they are malicious or benign.
 
-Filtering of benign indicators is typically application-specific, 
-so we prefer to keep it as a separate step. 
+Filtering of benign indicators is typically application-specific,
+so we prefer to keep it as a separate step.
 Such filtering is oftentimes performed with blocklists or through
 Natural Language Processing (NLP) techniques.
+
+## License
+
+_iocsearcher_ is released under the MIT license
+
+This repository includes Base58 decoding code from the
+[monero-python](https://github.com/monero-ecosystem/monero-python/) project.
+That code is located in the iocsearcher/monero folder and it is
+licensed under BSD 3-Clause.
 
 ## References
 

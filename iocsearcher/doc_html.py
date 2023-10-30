@@ -8,7 +8,8 @@ from bs4 import BeautifulSoup
 from bs4.element import Comment
 from readabilipy import simple_json_from_html_string
 from iocsearcher.doc_base import Document
-from iocsearcher.doc_common import read_raw_file, read_file_as_text
+from iocsearcher.doc_common import read_raw_file,read_file_as_text
+
 
 # Set logging
 log = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ class Html(Document):
         return True
 
     def get_metadata(self):
-        ''' Return metadata dictionary, None if no metadata '''
+        """Return metadata dictionary, None if no metadata"""
         metadata = {}
         # Add title
         if self.soup.title is not None:
@@ -81,7 +82,7 @@ class Html(Document):
         return metadata
 
     def get_title(self):
-        ''' Return HTML title '''
+        """Return HTML title"""
         metadata = self.get_metadata()
         title = metadata.get('Title', None)
         if title is None:
@@ -94,7 +95,7 @@ class Html(Document):
 
     def get_text_html(self, sep=' ', include_all=False,
                     include_metadata=False, include_links=False):
-        ''' Extract visible text in HTML using our own approach '''
+        """Extract visible text in HTML using our own approach"""
         # Read raw contents
         data = read_raw_file(self.filepath)
         # Replace beautifiers
@@ -123,7 +124,7 @@ class Html(Document):
         return [htext]
 
     def get_text_elements(self, options=None):
-        ''' Return list of text elements and extraction method '''
+        """Return list of text elements and extraction method"""
         if options is None:
             options = {}
         html_raw = options.get('html_raw', False)

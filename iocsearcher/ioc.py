@@ -5,7 +5,7 @@
 import json
 
 # Base IOC class
-class IOC:
+class Ioc:
     def __init__(self, name, value, attributes=None):
         self.name = name
         self.value = value
@@ -49,6 +49,6 @@ class IOC:
 
 
 def create_ioc(name, value, attributes=None):
-    ''' Create IOC from its name and value '''
-    return IOC(name, value, attributes=attributes)
+    """Create IOC from its name and value"""
+    return Ioc(name, value, attributes=attributes)
 

@@ -18,18 +18,18 @@ from pdfminer.pdfdocument import PDFDocument
 log = logging.getLogger(__name__)
 
 class Pdf(Document):
-    ''' Class for PDF documents '''
+    """Class for PDF documents"""
     def __init__(self, filepath, mime_type=None):
         Document.__init__(self, filepath, mime_type=mime_type)
         self.filepath = filepath
         self.fd = open(filepath, "rb")
 
     def __del__(self):
-        ''' Close file descriptor on destruction '''
+        """Close file descriptor on destruction"""
         self.fd.close()
 
     def get_metadata(self, enc='utf-8'):
-        ''' Get PDF metadata using pdfminer '''
+        """Get PDF metadata using pdfminer"""
         metadata = {}
         parser = PDFParser(self.fd)
         try:
@@ -55,7 +55,7 @@ class Pdf(Document):
         return metadata
 
     def get_title(self):
-        ''' Return PDF title '''
+        """Return PDF title"""
         metadata = self.get_metadata()
         if metadata:
             return metadata.get("Title", None)
@@ -63,8 +63,9 @@ class Pdf(Document):
             return None
 
     def get_text_elements(self, options=None):
-        ''' Return list of text elements and extraction method
-            Each element is the text of a page '''
+        """Return list of text elements and extraction method
+            Each element is the text of a page
+        """
         pages = []
         laparams = LAParams()
         laparams.all_texts = True

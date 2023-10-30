@@ -8,16 +8,18 @@ import logging
 import ipaddress
 import phonenumbers
 from base64 import b32decode
-from hashlib import sha3_256
+from hashlib import sha3_256, sha256
 from urllib.parse import urlparse
 import configparser as ConfigParser
-
-# Import optional third-party libraries
-try:
-    import coinaddrvalidator
-    can_validate_blockchain_addr = True
-except ImportError:
-    can_validate_blockchain_addr = False
+from intervaltree import Interval, IntervalTree
+import base58
+import bech32
+import binascii
+import cashaddress
+import cbor
+from eth_hash.auto import keccak
+import iocsearcher.ioc
+import iocsearcher.monero.base58
 
 # Set logging
 log = logging.getLogger(__name__)
@@ -37,17 +39,18 @@ lang_countries = {
     'it' : ['IT'],
 }
 
-# Default IOC creation function
-def default_create_ioc(name, value):
-    ''' Create IOC from its name and value '''
-    return (name, value)
+# Table for computing Bitcoin Bech32 checksum
+BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 
 class Searcher:
     # Static regular expressions for rearming IOCs
     re_dots = re.compile(r'\[\.\]|\[\]|\(dot\)|\[dot\]|\(\.\)', re.I)
     re_at = re.compile(r' at |\(at\)| \(at\) |\[at\]| \[at\] ', re.I)
     re_http = re.compile(r'^(hxxp|h___p|httx|hpp)', re.I)
-    re_private_ip = re.compile(r'^(192.168.|10.|172.(1[6-9]|2[0-9]|3[0-1]))')
+    re_private_ip4 = re.compile(r'^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1]))')
+    re_local_ip4 = re.compile(r'^(127\.)')
+    re_ethereum_nonchecksummed = re.compile(
+                                    "^(0x)?([0-9a-f]{40}|[0-9A-F]{40})$")
 
     def __init__(self, patterns_ini=None, tld_filepath=None,
                         create_ioc_fun=None):
@@ -61,7 +64,7 @@ class Searcher:
         if create_ioc_fun is not None:
             self.create_ioc = create_ioc_fun
         else:
-            self.create_ioc = default_create_ioc
+            self.create_ioc = iocsearcher.ioc.create_ioc
         # Read TLDs
         self.tlds = self.read_tlds(self.tld_filepath)
         self.tlds.add("onion")
@@ -84,11 +87,11 @@ class Searcher:
         return cls.rearm_dots(s)
 
     @classmethod
-    def rearm_ip(cls, s):
+    def rearm_ip4(cls, s):
         return cls.rearm_dots(s)
 
     @classmethod
-    def rearm_ipNet(cls, s):
+    def rearm_ip4Net(cls, s):
         return cls.rearm_dots(s)
 
     @classmethod
@@ -96,8 +99,35 @@ class Searcher:
         s = re.sub(cls.re_http, 'http', s)
         return cls.rearm_dots(s)
 
+    @classmethod
+    def normalize_bitcoin(cls, s):
+        # While Bech address should be lowercase sometimes they are capitalized
+        # so we normalized them
+        if s.startswith('BC1'):
+            return s.lower()
+        else:
+            return s
+
+    @classmethod
+    def normalize_fqdn(cls, s):
+        return s.lower()
+
+    @classmethod
+    def normalize_iban(cls, s):
+        return s.replace(' ','')
+
+    @classmethod
+    def normalize_phoneNumber(cls, s):
+        try:
+            p = phonenumbers.parse(s, None)
+            ioc_value = phonenumbers.format_number(p,
+                                  phonenumbers.PhoneNumberFormat.E164)
+            return ioc_value
+        except:
+            return s
+
     def is_valid_tld(self, s):
-        ''' Check if given string is a valid TLD according to IANA list '''
+        """Check if given string is a valid TLD according to IANA list"""
         # To help address common issues such a period not followed by a space
         # we allow 'COM' and 'com', but not 'Com' and 'CoM'
         if re.match('[A-Z][a-z]', s):
@@ -107,43 +137,86 @@ class Searcher:
         return (self.tlds is None) or (s in self.tlds) or s.startswith('xn--')
 
     def is_valid_fqdn(self, s):
-        ''' Check if given string ends with valid TLD according to IANA '''
-        idx = s.rfind('.')
-        return (idx != -1) and self.is_valid_tld(s[idx+1:])
+        """Check if given string ends with valid TLD according to IANA"""
+        # Check valid characters
+        if not re.match('^(\*\.)?[a-zA-Z0-9\-\.]+$', s):
+            return False
+        # Parse fqdn into labels
+        labels = s.split('.')
+        # Check there are at least two labels
+        if len(labels) < 2:
+            return False
+        # Check that no label is empty
+        # and that no label is only 'x', which indicates it is obfuscated
+        for l in labels:
+            if not l:
+                return False
+            # This is problematic since x.com, xx.com, xxx.com resolve
+            #if re.match('^[xX]+$', l):
+            #    return False
+        # Filter domains that are all in lowercase,
+        # except for the first character of the TLD
+        # This may happen when the text does not place a space after a period
+        tld = labels[-1]
+        num_uppercase = sum(1 for c in s if c.isupper())
+        if (num_uppercase == 1) and tld[0].isupper():
+            return False
+        # Check if last label is valid TLD
+        return self.is_valid_tld(tld)
 
     def is_valid_email(self, s):
-        ''' Check if given string ends with valid TLD according to IANA '''
-        idx = s.rfind('.')
-        return (idx != -1) and self.is_valid_tld(s[idx+1:])
+        """Check given string is a valid email"""
+        # Split into username and fqdn
+        tokens = s.split('@')
+        if len(tokens) != 2:
+            return False
+        # If username is all 'x', it is likely obfuscated
+        if re.match('^[xX]+$', tokens[0]):
+            return False
+        return self.is_valid_fqdn(tokens[1])
 
     def is_valid_packageName(self, s):
-        ''' Check if given string starts with valid TLD according to IANA '''
+        """Check if given string starts with valid TLD according to IANA"""
         tokens = s.split('.')
         return (len(tokens) > 1) and self.is_valid_tld(tokens[0])
 
     @classmethod
-    def is_valid_ip(cls, s, ignore_private=True):
-        ''' Check if given string is a valid IPv4 or IPv6 address '''
+    def is_valid_ip4(cls, s, ignore_private=True, ignore_local=True):
+        """Check if given string is a valid IPv4 address"""
         try:
-            ipaddress.ip_address(s)
+            ipaddress.IPv4Address(s)
             if ignore_private:
-                return (cls.re_private_ip.match(s) is None)
+                if cls.re_private_ip4.match(s) is not None:
+                    return False
+            if ignore_local:
+                if cls.re_local_ip4.match(s) is not None:
+                    return False
+            return True
+        except ValueError:
+            return False
+
+    @classmethod
+    def is_valid_ip6(cls, s, ignore_private=True, ignore_local=True):
+        """Check if given string is a valid IPv6 address"""
+        try:
+            ipaddress.IPv6Address(s)
             return True
         except ValueError:
             return False
 
     @staticmethod
-    def is_valid_ipNet(s):
-        ''' Check if given string is a valid IPv4 or IPv6 network '''
+    def is_valid_ip4Net(s):
+        """Check if given string is a valid IPv4 or IPv6 network"""
         try:
-            ipaddress.ip_network(s)
+            ipaddress.IPv4Network(s)
             return True
         except ValueError:
             return False
 
     def is_valid_url(self, s):
-        ''' Check if given string is a valid URL by extracting host
-            and checking if IP or valid TLD '''
+        """Check if given string is a valid URL by extracting host
+            and checking if IP or valid TLD"""
+        # Parse the URL with special handling for urlparse if no scheme
         try:
             if ("://" in s[0:15]):
                 parsed = urlparse(s)
@@ -151,25 +224,27 @@ class Searcher:
                 parsed = urlparse("http://" + s)
         except ValueError:
             return False
+        # If no hostname, invalid
         if not parsed.hostname:
             return False
-        # Validate URLs with IP address
+        # Parse hostname
         tokens = parsed.hostname.split('.')
+        # Validate URLs with IP address
         if tokens[-1].isdigit():
             # Avoid ipNet
             if re.match('/[0-9]{1,2}$', parsed.path):
                 return False
-            return __class__.is_valid_ip(parsed.hostname)
+            return __class__.is_valid_ip4(parsed.hostname)
         # Validate Onion URLs
-        #elif tokens[-1] == 'onion':
-        #    return self.is_valid_onionAddress(tokens[-2])
+        elif tokens[-1] == 'onion':
+            return self.is_valid_onionAddress(tokens[-2])
         # Validate URLs with FQDN
         else:
-            return self.is_valid_tld(tokens[-1])
+            return self.is_valid_fqdn(parsed.hostname)
 
     @staticmethod
     def is_valid_nif(s):
-        ''' Check if given string is a valid Spanish NIF or NIE  '''
+        """Check if given string is a valid Spanish NIF or NIE"""
         tabla = "TRWAGMYFPDXBNJZSQVHLCKE"
         dig_ext_map = {'X':'0','Y':'1','Z':'2'}
         # Remove hyphens
@@ -218,7 +293,7 @@ class Searcher:
 
     @staticmethod
     def is_valid_uuid(s):
-        ''' Check if given string has valid UUID version and variant '''
+        """Check if given string has valid UUID version and variant"""
         tokens = s.split('-')
         num_tokens = len(tokens)
         try:
@@ -232,7 +307,7 @@ class Searcher:
 
     @staticmethod
     def copyright_entity(s):
-        ''' Extract entity from copyright string '''
+        """Extract entity from copyright string"""
         # Remove variations of: "All Rights Reserved", "copyright", "(c)", years
         regexp = re.compile(
               "((?:[.\-,–;]+)?(?:[ ]+)?All Right[s]? Reserved( to|\.)?)|"
@@ -248,111 +323,180 @@ class Searcher:
 
     @staticmethod
     def is_valid_copyright(s):
-        ''' Check if given copyright string has a non-empty entity '''
+        """Check if given copyright string has a non-empty entity"""
         entity = __class__.copyright_entity(s)
         return entity != ""
 
     @staticmethod
-    def is_valid_coinaddr(s, addr_type, network_type="main"):
-        ''' Use coinaddr library to validate virtual currency address '''
-        if not can_validate_blockchain_addr:
-            return True
-        # Validate checksum
+    def is_valid_base58_checksum(s, alphabet=base58.BITCOIN_ALPHABET):
+        """Check if input has a valid checksum after Base58 decoding"""
         try:
-            result = coinaddrvalidator.validate(addr_type, s)
-            if network_type is not None:
-                return result.valid and (result.network == network_type)
-            else:
-                return result.valid
-        except (ValueError,TypeError):
+            payload = base58.b58decode(s, alphabet=alphabet)
+        except ValueError:
             return False
+        expected_checksum = payload[-4:]
+        checksum = sha256(sha256(payload[:-4]).digest()).digest()[:4]
+        return checksum == expected_checksum
 
     @staticmethod
-    def is_valid_bitcoin(s, network_type="main"):
-        ''' Check if given string is a valid Bitcoin address
-            by validating its checksum '''
-        # cryptoaddr does not seem to support BECH addresses
-        #if s.startswith("bc1"):
-        #    return True
-        return __class__.is_valid_coinaddr(s, 'btc', network_type)
+    def bech32_polymod(values):
+        """Compute the Bech32 checksum for the given values"""
+        gen = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
+        chk = 1
+        for v in values:
+            b = chk >> 25
+            chk = (chk & 0x1ffffff) << 5 ^ v
+            for i in range(5):
+                chk ^= gen[i] if ((b >> i) & 1) else 0
+        return chk
 
     @staticmethod
-    def is_valid_bitcoincash(s, network_type="main"):
-        ''' Check if given string is a valid BitcoinCash address
-            by validating its checksum '''
-        # coinaddrvalidator does not seem to support Bitcoin Cash correctly
-        # It returns valid=False for valid addresses like
-        # qz7xc0vl85nck65ffrsx5wvewjznp9lflgktxc5878
+    def is_valid_bech32(s):
+        """Check if input is valid Bech32 address by validating checksum"""
+        pos = s.rfind('1')
+        hrp = s[:pos]
+        payload = s[pos+1:]
+        # Compute values
+        values = [BECH32_CHARSET.find(x) for x in payload]
+        # Expand the HRP into values for checksum computation
+        exp_hrp = [ord(x) >> 5 for x in hrp] + [0] + [ord(x) & 31 for x in hrp]
+        # Compute checksum
+        checksum = __class__.bech32_polymod(exp_hrp + values)
+        # Check that checksum has Bech32 or Bech32-m values
+        return (checksum == 1) or (checksum == 734539939)
+
+    @staticmethod
+    def is_valid_bitcoin(s):
+        """Check if given string is a valid Bitcoin address"""
+        # Normalize (since normalization happens after validation)
+        if s.startswith('BC1'):
+            s = s.lower()
+        # Validate depending on encoding
+        if s.startswith('bc1'):
+            return __class__.is_valid_bech32(s)
+        else:
+            return __class__.is_valid_base58_checksum(s)
+
+    @staticmethod
+    def is_valid_bitcoincash(s):
+        """Check if given string is a valid BitcoinCash address"""
+        addr_str = s if s.startswith('bitcoincash:') else 'bitcoincash:' + s
+        return cashaddress.convert.is_valid(addr_str)
+
+    @staticmethod
+    def is_valid_cardano(s):
+        """Check if given string is a valid Cardano Shelley/Byron address"""
+        # https://cips.cardano.org/cips/cip19/
+        # Validate Shelley address
+        if s[0:5] == 'addr1':
+                try:
+                    hrp, _payload32 = bech32.bech32_decode(s)
+                    payload = bech32.convertbits(_payload32, 5, 8, False)
+                    atype = payload[0] >> 4
+                    network = payload[0] & 15
+                    # Valid if mainnet and shelley type (0 to 7 inclusive)
+                    return (network == 1) and (atype <= 7)
+                except:
+                    return False
+        # Validate Byron address
+        else:
+            try:
+                decoded_address = cbor.loads(base58.b58decode(s))
+                tagged_address = decoded_address[0]
+                expected_checksum = decoded_address[1]
+                checksum = binascii.crc32(tagged_address.value)
+                return checksum == expected_checksum
+            except:
+                return False
+
+    @staticmethod
+    def is_valid_dashcoin(s):
+        """Check if given string is a valid Dashcoin address"""
+        return __class__.is_valid_base58_checksum(s)
+
+    @staticmethod
+    def is_valid_dogecoin(s):
+        """Check if given string is a valid Dogecoin address"""
+        return __class__.is_valid_base58_checksum(s)
+
+    @classmethod
+    def is_valid_ethereum(cls, s):
+        """Check if given string is a valid Ethererum address"""
+        addr = s[2:] if s.startswith('0x') else s
+        # If all lowercase or all uppercases, return true
+        if re.match(cls.re_ethereum_nonchecksummed, addr):
+            return True
+        # Otherwise, validate checksum
+        addr_hash = keccak.new(addr.lower().encode('utf-8')).digest().hex()
+        for i, letter in enumerate(addr):
+            if any([
+                    int(addr_hash[i], 16) >= 8 and letter.upper() != letter,
+                    int(addr_hash[i], 16) < 8 and letter.lower() != letter
+            ]):
+                return False
         return True
-        # return __class__.is_valid_coinaddr(s, 'bitcoin-cash', network_type)
 
     @staticmethod
-    def is_valid_dashcoin(s, network_type="main"):
-        ''' Check if given string is a valid Dashcoin address
-            by validating its checksum '''
-        return __class__.is_valid_coinaddr(s, 'dashcoin', network_type)
+    def is_valid_litecoin(s):
+        """Check if given string is a valid Litecoin address"""
+        # Validate depending on encoding
+        if s.startswith('ltc1'):
+            return __class__.is_valid_bech32(s)
+        else:
+            return __class__.is_valid_base58_checksum(s)
 
     @staticmethod
-    def is_valid_dogecoin(s, network_type="main"):
-        ''' Check if given string is a valid Dogecoin address
-            by validating its checksum '''
-        return __class__.is_valid_coinaddr(s, 'dogecoin', network_type)
+    def is_valid_monero(s):
+        """Check if given string is a valid Monero address"""
+        _decoded = iocsearcher.monero.base58.decode(s)
+        decoded_address = bytearray(binascii.unhexlify(_decoded))
+        expected_checksum = decoded_address[-4:]
+        payload = decoded_address[:-4]
+        checksum = keccak.new(payload).digest()[:4]
+        return checksum == expected_checksum
 
     @staticmethod
-    def is_valid_ethereum(s, network_type="both"):
-        ''' Check if given string is a valid Ethererum address
-            by validating its checksum '''
-        return __class__.is_valid_coinaddr(s, 'ethereum', network_type)
-
-    @staticmethod
-    def is_valid_litecoin(s, network_type="main"):
-        ''' Check if given string is a valid Litecoin address
-            by validating its checksum '''
-        return __class__.is_valid_coinaddr(s, 'litecoin', network_type)
+    def is_valid_ripple(s):
+        """Check if given string is a valid Ripple address"""
+        return __class__.is_valid_base58_checksum(s,
+                                              alphabet=base58.RIPPLE_ALPHABET)
 
     @staticmethod
     def is_valid_tezos(s):
-        ''' Check if given string is a valid Tezos address
-            by validating its checksum '''
-        # We cannot use is_valid_coinaddr since coinaddrvalidator.validate
-        # returns valid=False for valid Tezos addresses
-        # Also coinaddrvalidator.validate seems to validate incorrect addresses
-        # For example, tz1L9r8mWmRpndRhuvMCWESLGSVeFzQ9NAWx validates
-        # but should not according to https://tezostaquito.io/docs/validators/
-        if not can_validate_blockchain_addr:
-            return True
-        try:
-            result = coinaddrvalidator.validate('tezos', s)
-            return result.address_type != ''
-        except:
-            return False
+        """Check if given string is a valid Tezos address"""
+        return __class__.is_valid_base58_checksum(s)
 
     @staticmethod
-    def is_valid_zcash(s, network_type="main"):
-        ''' Check if given string is a valid ZCash address
-            by validating its checksum '''
-        # coinaddrvalidator does not seem to support ZCash correctly
-        # It returns valid=False for valid addresses like
-        # t1fSVQStheqdugmoN2LKy6WZzdSc29m7Wze
-        return True
-        # return __class__.is_valid_coinaddr(s, 'zcash', network_type)
+    def is_valid_tronix(s):
+        """Check if given string is a valid Tronix address.
+            If it starts with '41' then use the ethereum validation,
+            otherwise validate base58 checksum"""
+        if s.startswith('41'):
+            return __class__.is_valid_ethereum(s[2:])
+        else:
+            return __class__.is_valid_base58_checksum(s)
+
+    @staticmethod
+    def is_valid_zcash(s):
+        """Check if given string is a valid ZCash transparent address"""
+        return __class__.is_valid_base58_checksum(s)
 
     @staticmethod
     def is_valid_telegramHandle(s):
-        ''' Check if given string is a valid Telegram handle '''
+        """Check if given string is a valid Telegram handle"""
         return s not in {'joinchat', 'share', 'username'}
 
     @staticmethod
     def is_valid_twitterHandle(s):
-        ''' Check if given string is a valid Twitter handle '''
+        """Check if given string is a valid Twitter handle"""
         return s not in {'author_handle', 'home', 'https', 'intent',
                           'personalization', 'privacy',
-                          'rules', 'search', 'settings', 'share',
+                          'rules', 'search', 'security', 'settings', 'share',
                           'terms', 'tos', 'web', 'widgets', 'your_twitter_da'}
 
     @staticmethod
     def is_valid_facebookHandle(s):
-        ''' Check if given string is a valid Facebook handle '''
+        """Check if given string is a valid Facebook handle"""
         return s not in {'about', 'ads', 'business', 'dialog', 'docs',
                             'events', 'help',
                             'full', 'groups', 'legal', 'pages',
@@ -362,46 +506,49 @@ class Searcher:
 
     @staticmethod
     def is_valid_instagramHandle(s):
-        ''' Check if given string is a valid Instagram handle '''
+        """Check if given string is a valid Instagram handle"""
         return s not in {'about', 'legal'}
 
     @staticmethod
     def is_valid_pinterestHandle(s):
-        ''' Check if given string is a valid Pinterest handle '''
+        """Check if given string is a valid Pinterest handle"""
         return s not in {'https', 'pin', 'static'}
 
     @staticmethod
     def is_valid_githubHandle(s):
-        ''' Check if given string is a valid GitHub handle '''
+        """Check if given string is a valid GitHub handle"""
         return s not in {'about', 'auth', 'buttons', 'contact', 'events',
                           'fluidicon', 'github', 'notifications', 'pricing',
                           'readme', 'security', 'site', '_private'}
 
     @staticmethod
     def is_valid_linkedinHandle(s):
-        ''' Check if given string is a valid LinkedIn handle '''
+        """Check if given string is a valid LinkedIn handle"""
         return True
 
     @staticmethod
-    def is_valid_ripple(s, network_type="main"):
-        ''' Check if given string is a valid Ripple address
-            by validating its checksum '''
-        return __class__.is_valid_coinaddr(s, 'ripple', network_type=None)
-
-    @staticmethod
     def is_valid_youtubeHandle(s):
-        ''' Check if given string is a valid YouTube handle '''
+        """Check if given string is a valid YouTube handle"""
         return s not in {'channel', 'embed', 'feed', 'iframe',
                           'player', 'playlist', 'privacynotice',
                           'static', 'watch', 'yt'}
 
     @staticmethod
     def is_valid_youtubeChannel(s):
-        ''' Check if given string is a valid YouTube channel '''
+        """Check if given string is a valid YouTube channel"""
         return True
 
+    @staticmethod
+    def is_valid_phoneNumber(s):
+        """Check if given string is a valid phone"""
+        try:
+            p = phonenumbers.parse(s, None)
+            return phonenumbers.is_valid_number(p)
+        except:
+            return False
+
     def is_valid_phone(self, s, country=None, language=None):
-        ''' Check if given string is a valid phone '''
+        """Check if given string is a valid phone"""
         # If country provided, validate it using the country
         if country:
             try:
@@ -434,27 +581,36 @@ class Searcher:
 
     @staticmethod
     def is_valid_onionAddress(s):
-        ''' Return true if the input string is a valid Tor onion v3 address '''
-        if not s.endswith('d'):
+        """Return true if the input string is a valid Tor onion v3 address"""
+        l = len(s)
+        # v2 addresses cannot really be validated
+        if l == 16:
+            return True
+        # Validate v3 addresses
+        elif l == 56:
+            if not s.endswith('d'):
+                return False
+            # Validate the embedded checksum
+            decoded = b32decode(s.upper())
+            v3_pubkey = decoded[:32]
+            v3_checksum = decoded[32:34]
+            v3_version = int(3).to_bytes(1, 'little')
+            expected_checksum = sha3_256(".onion checksum".encode('utf-8') +
+                                          v3_pubkey + v3_version).digest()[:2]
+            return expected_checksum == v3_checksum
+        # Invalid address length
+        else:
             return False
-        # Validate the embedded checksum
-        decoded = b32decode(s.upper())
-        v3_pubkey = decoded[:32]
-        v3_checksum = decoded[32:34]
-        v3_version = int(3).to_bytes(1, 'little')
-        expected_checksum = sha3_256(".onion checksum".encode('utf-8') +
-                                      v3_pubkey + v3_version).digest()[:2]
-        return expected_checksum == v3_checksum
 
     @staticmethod
     def is_valid_iban(s):
-        ''' Return true if the input string is a valid IBAN
+        """Return true if the input string is a valid IBAN
             An IBAN comprises of 15-32 alphanumeric characters with format:
               2 characters for country code
               2 control characters (checksum)
               up to 28 account characters depending on country
             Validator checks length for country and IBAN checksum
-        '''
+        """
         iban_length = {
             "AD":24, "AE":23, "AT":20, "AZ":28, "BA":20, "BE":16,
             "BG":22, "BH":22, "BR":29, "CH":21, "CR":22, "CY":28,
@@ -503,7 +659,7 @@ class Searcher:
         return (int(check_str)%97) == 1
 
     def read_patterns(self, filepath):
-        ''' Reads regexp in INI file and returns them as a map '''
+        """Reads regexp in INI file and returns them as a map"""
         patterns = {}
         # Read configuration file
         config = ConfigParser.SafeConfigParser()
@@ -516,8 +672,8 @@ class Searcher:
             # Read pattern
             try:
                 ioc_pattern = config.get(sec, 'pattern')
-            except ConfigParser.Error:
-                log.warning("Missing pattern in %s" % sec)
+            except ConfigParser.Error as exc:
+                log.warning("Could not extract pattern in %s: %s" % (sec, exc))
                 continue
 
             # Read flags
@@ -552,7 +708,7 @@ class Searcher:
 
     @staticmethod
     def read_tlds(filepath):
-        ''' Reads TLDs in IANA file and returns them as a set '''
+        """Reads TLDs in IANA file and returns them as a set"""
         fd = open(filepath, 'r')
         tlds = set()
         for line in fd:
@@ -565,7 +721,7 @@ class Searcher:
 
     @staticmethod
     def build_alternate_regex(elements, match_word=True):
-        ''' Return alternate regex for input strings '''
+        """Return alternate regex for input strings"""
         if not elements:
             return None
         sorted_l = sorted(list(elements), key=len, reverse=True)
@@ -573,7 +729,7 @@ class Searcher:
         return "%s(%s)%s" % (boundary, "|".join(sorted_l), boundary)
 
     def add_iocs_regex(self, iocs, ignore_case=True, match_word=True):
-        ''' Add alternate pattern for each ioc type in input list '''
+        """Add alternate pattern for each ioc type in input list"""
         ioc_map = {}
         num_patterns = 0
         for ioc in iocs:
@@ -597,8 +753,8 @@ class Searcher:
         return num_patterns
 
     def search_raw(self, data, targets=None):
-        ''' Apply targets regexps to input data,
-            Returns list of (type, rearmed_value, start_offset, raw_value) '''
+        """Apply targets regexps to input data,
+            Returns list of (type, rearmed_value, start_offset, raw_value)"""
         results = []
         # Select targets
         if targets is None:
@@ -626,8 +782,8 @@ class Searcher:
                     log.debug("Processing %s %s at [%d,%d)" % (
                               ioc_name, raw_value, start_offset, end_offset))
 
-                    # Rearm
-                    if ioc_name in ["email", "fqdn", "ip", "ipNet", "url"]:
+                    # Rearm value
+                    if ioc_name in ["email", "fqdn", "ip4", "ip4Net", "url"]:
                         rearm_func = getattr(self, "rearm_" + ioc_name)
                         rearmed_value = rearm_func(raw_value)
                     else:
@@ -643,23 +799,35 @@ class Searcher:
                                           start_offset, raw_value))
                             continue
 
+                    # Normalize value
+                    if ioc_name in ["bitcoin", "fqdn", "iban", "phoneNumber"]:
+                        normalize_func = getattr(self, "normalize_" + ioc_name)
+                        normalized_value = normalize_func(rearmed_value)
+                    else:
+                        normalized_value = rearmed_value
+
+
                     # Store result tuple (name,value,start,raw_value)
-                    results.append((ioc_name, rearmed_value,
+                    results.append((ioc_name, normalized_value,
                                     start_offset, raw_value))
         return results
 
-    def search_data(self, data, targets=None):
-        ''' Wrapper for search_raw that:
+    def search_data(self, data, targets=None, no_overlaps=False):
+        """Wrapper for search_raw that:
             (1) Builds IOCs on the returned rearmed value
             (2) Removes duplicated IOCs that appeared at different positions
-            Returns a set of IOCs '''
+            Returns a set of IOCs"""
         results = set()
-        for m in self.search_raw(data, targets):
-            # Lowercase domains to avoid having same domain capitalized and not
-            ioc_value = m[1] if m[0] != 'fqdn' else m[1].lower()
+        # Scan text with regexp
+        matches = self.search_raw(data, targets)
+        # Remove overlaps if needed
+        if no_overlaps:
+            matches = self.remove_overlaps(matches)
+        # Process matches
+        for m in matches:
             # Create IOC
             try:
-                found_ioc = self.create_ioc(m[0], ioc_value)
+                found_ioc = self.create_ioc(m[0], m[1])
             except ValueError:
                 log.warning("Failed to create IOC %s %s" % (m[0], m[1]))
                 continue
@@ -668,7 +836,7 @@ class Searcher:
         return results
 
     def search_phone_numbers(self, text, country=None, language=None):
-        ''' Search for phone numbers in given text, returns a set of IOCs '''
+        """Search for phone numbers in given text, returns a set of IOCs"""
         iocs = set()
         seen = set()
         # Build list of countries to check
@@ -697,7 +865,7 @@ class Searcher:
         return iocs
 
     def search_url(self, url, additional_targets=None):
-        ''' Search URL for URL-IOCs '''
+        """Search URL for URL-IOCs"""
         url_targets = {
             'facebookHandle',
             'githubHandle',
@@ -714,4 +882,27 @@ class Searcher:
         if additional_targets:
             url_targets.update(additional_targets)
         return self.search_data(url, url_targets)
+
+    @staticmethod
+    def remove_overlaps(l):
+        """Remove overlapping indicators
+            Assumes input is list of (type, rearmed_val, start_off, raw_val)
+        """
+        # Sort list by (start,length of raw_value)
+        l.sort(key=lambda e : (e[2],-len(e[3])))
+        # Load list entries into dictionary and tree
+        t = IntervalTree()
+        acc = []
+        for (ioc_type, rearmed_value, start, raw_value) in l:
+            length = len(raw_value)
+            end = start + length - 1
+            overlaps = t.overlap(start,end)
+            should_add = True
+            for interval in overlaps:
+                if (start >= interval.begin) and (end <= interval.end):
+                    should_add = False
+            if should_add:
+                acc.append((ioc_type, rearmed_value, start, raw_value))
+            t[start:end] = (ioc_type, rearmed_value, start, raw_value)
+        return acc
 

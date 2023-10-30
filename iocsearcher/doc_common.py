@@ -10,14 +10,14 @@ import magic
 log = logging.getLogger(__name__)
 
 def read_raw_file(filepath):
-    ''' Read file contents as binary string '''
+    """Read file contents as binary string"""
     fd = open(filepath, 'rb')
     data = fd.read()
     fd.close()
     return data
 
 def read_file_as_text(filepath):
-    ''' Try to read file as text using a fixed list of popular encodings '''
+    """Try to read file as text using a fixed list of popular encodings"""
     data = read_raw_file(filepath)
     text = None
     for enc in [ 'utf-8', 'cp1252' ]:
@@ -31,7 +31,7 @@ def read_file_as_text(filepath):
     return text
 
 def get_file_mime_type(filepath, n=1024):
-    ''' Get file MIME type '''
+    """Get file MIME type"""
     mime_type = magic.from_file(filepath, mime=True)
     if (mime_type == "application/octet-stream"):
         with open(filepath, 'rb') as fd:
