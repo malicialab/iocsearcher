@@ -452,7 +452,7 @@ class Searcher:
         # (looks like with long strings)
         try:
             _decoded = iocsearcher.monero.base58.decode(s)
-        with ValueError:
+        except ValueError:
             return False
         decoded_address = bytearray(binascii.unhexlify(_decoded))
         expected_checksum = decoded_address[-4:]
