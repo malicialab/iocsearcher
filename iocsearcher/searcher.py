@@ -448,7 +448,12 @@ class Searcher:
     @staticmethod
     def is_valid_monero(s):
         """Check if given string is a valid Monero address"""
-        _decoded = iocsearcher.monero.base58.decode(s)
+        # FIX: Monero Base58 decode can throw ValueError: Overflow 
+        # (looks like with long strings)
+        try:
+            _decoded = iocsearcher.monero.base58.decode(s)
+        with ValueError:
+            return False
         decoded_address = bytearray(binascii.unhexlify(_decoded))
         expected_checksum = decoded_address[-4:]
         payload = decoded_address[:-4]
