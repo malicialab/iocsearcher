@@ -544,15 +544,7 @@ class Searcher:
         return True
 
     @staticmethod
-    def is_valid_phoneNumber(s):
-        """Check if given string is a valid phone"""
-        try:
-            p = phonenumbers.parse(s, None)
-            return phonenumbers.is_valid_number(p)
-        except:
-            return False
-
-    def is_valid_phone(self, s, country=None, language=None):
+    def is_valid_phone(s, country=None, language=None):
         """Check if given string is a valid phone"""
         # If country provided, validate it using the country
         if country:
@@ -582,7 +574,14 @@ class Searcher:
         # Otherwise, take a guess based on length
         digit_str = re.sub('[^0-9]','', s)
         l = len(digit_str)
-        return (l >= 3) and (l <= 15)
+        # Minimum length is 5 for some islands,
+        # but most countries have at least 7 digits
+        return (l >= 7) and (l <= 15)
+
+    @staticmethod
+    def is_valid_phoneNumber(s):
+        """Check if given string is a valid phone"""
+        return __class__.is_valid_phone(s)
 
     @staticmethod
     def is_valid_onionAddress(s):
