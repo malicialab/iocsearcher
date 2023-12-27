@@ -473,13 +473,8 @@ class Searcher:
 
     @staticmethod
     def is_valid_tronix(s):
-        """Check if given string is a valid Tronix address.
-            If it starts with '41' then use the ethereum validation,
-            otherwise validate base58 checksum"""
-        if s.startswith('41'):
-            return __class__.is_valid_ethereum(s[2:])
-        else:
-            return __class__.is_valid_base58_checksum(s)
+        """Check if given string is a valid Tronix address"""
+        return __class__.is_valid_base58_checksum(s)
 
     @staticmethod
     def is_valid_zcash(s):
