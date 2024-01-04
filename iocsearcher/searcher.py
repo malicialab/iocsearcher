@@ -69,9 +69,11 @@ class Searcher:
         self.tlds = self.read_tlds(self.tld_filepath)
         self.tlds.add("onion")
         log.debug("Read %d TLDs" % len(self.tlds))
+        # Initialize patterns
+        self.patterns = {}
         # Read patterns
-        self.patterns = self.read_patterns(self.patterns_ini)
-        log.debug("Read regexps for %d IOCs" % len(self.patterns))
+        num_patterns = self.read_patterns(self.patterns_ini)
+        log.debug("Read regexps for %d IOCs" % num_patterns)
 
     @classmethod
     def rearm_dots(cls, s):
@@ -660,9 +662,21 @@ class Searcher:
                               iban[2:4])
         return (int(check_str)%97) == 1
 
+    def add_regexp(self, ioc_name, ioc_pattern, flags=0, validate=False):
+        """Adds regexp. Returns true if regexp added"""
+        # Add IOC to validation list
+        if validate:
+            self.validate.add(ioc_name)
+        # Compile regexp and store it
+        if ioc_name and ioc_pattern:
+            ioc_regex = re.compile(ioc_pattern, flags)
+            self.patterns.setdefault(ioc_name, []).append(ioc_regex)
+            return True
+        return False
+
     def read_patterns(self, filepath):
-        """Reads regexp in INI file and returns them as a map"""
-        patterns = {}
+        """Reads regexps in INI file. Returns number of regexps added"""
+        ctr = 0
         # Read configuration file
         config = ConfigParser.SafeConfigParser()
         config.readfp(open(filepath, "r", encoding="utf8"))
@@ -694,19 +708,18 @@ class Searcher:
             except ConfigParser.Error:
                 flags = 0
 
-            # Check whether IOC needs to be validated
+            # Read whether IOC needs to be validated
             try:
-                if config.getboolean(sec, 'validate'):
-                    self.validate.add(ioc_name)
+                validate = config.getboolean(sec, 'validate')
             except ConfigParser.Error:
-                pass
+                validate = False
 
-            # Compile regexp and store it
-            if ioc_pattern:
-                ioc_regex = re.compile(ioc_pattern, flags)
-                patterns.setdefault(ioc_name, []).append(ioc_regex)
+            # Add regexp
+            if self.add_regexp(ioc_name, ioc_pattern,
+                                flags=flags, validate=validate):
+                ctr += 1
 
-        return patterns
+        return ctr
 
     @staticmethod
     def read_tlds(filepath):
