@@ -31,7 +31,8 @@ def open_document(filepath, create_ioc_fun=None):
           doc = ExtendedHtml(filepath, mime_type=mime_type,
                               create_ioc_fun=create_ioc_fun)
     elif ((tokens[0] == "text") or
-          (mime_type == "application/csv")):
+          (mime_type == "application/csv") or
+          (mime_type == "application/json")):
         doc = Document(filepath, mime_type=mime_type)
     else:
         log.warning("Unsupported MIME type %s for %s" % (mime_type, filepath))
