@@ -42,6 +42,9 @@ lang_countries = {
 # Table for computing Bitcoin Bech32 checksum
 BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 
+# Normalization available for these types
+can_normalize = {"bitcoin", "email", "fqdn", "iban", "phoneNumber"}
+
 class Searcher:
     # Static regular expressions for rearming IOCs
     re_dots = re.compile(r'\[\.\]|\[\]|\(dot\)|\[dot\]|\(\.\)', re.I)
@@ -109,6 +112,13 @@ class Searcher:
             return s.lower()
         else:
             return s
+
+    @classmethod
+    def normalize_email(cls, s):
+        # The local-part could in principle be case-sensitive,
+        # but most mailboxes (e.g., Gmail) do not allow that and
+        # attackers do exploit different capitalizations
+        return s.lower()
 
     @classmethod
     def normalize_fqdn(cls, s):
@@ -815,12 +825,11 @@ class Searcher:
                             continue
 
                     # Normalize value
-                    if ioc_name in ["bitcoin", "fqdn", "iban", "phoneNumber"]:
+                    if ioc_name in can_normalize:
                         normalize_func = getattr(self, "normalize_" + ioc_name)
                         normalized_value = normalize_func(rearmed_value)
                     else:
                         normalized_value = rearmed_value
-
 
                     # Store result tuple (name,value,start,raw_value)
                     results.append((ioc_name, normalized_value,
