@@ -158,14 +158,14 @@ class Searcher:
         # Check there are at least two labels
         if len(labels) < 2:
             return False
-        # Check that no label is empty
-        # and that no label is only 'x', which indicates it is obfuscated
+        # Check the labels
         for l in labels:
+            # No label should be empty
             if not l:
                 return False
-            # This is problematic since x.com, xx.com, xxx.com resolve
-            #if re.match('^[xX]+$', l):
-            #    return False
+            # According to RFC 5322 labels should not start or end with hyphen
+            if l[0] == '-' or l[-1] == '-':
+                return False
         # Filter domains that are all in lowercase,
         # except for the first character of the TLD
         # This may happen when the text does not place a space after a period
@@ -178,12 +178,20 @@ class Searcher:
 
     def is_valid_email(self, s):
         """Check given string is a valid email"""
-        # Split into username and fqdn
+        # Split into local-part and fqdn
         tokens = s.split('@')
         if len(tokens) != 2:
             return False
-        # If username is all 'x', it is likely obfuscated
-        if re.match('^[xX]+$', tokens[0]):
+        # RFC 5322 does not allow the local-part:
+        #  - to contain two or more consecutive dots (checked by regexp)
+        #  - to start with a dot (checked by regexp)
+        #  - to end with a dot (checked here)
+        if tokens[0][-1] == '.':
+            return False
+        # The following local-part could in theory be valid
+        # but most likely they are anonymized
+        # Ignoring these ones is a trade-off
+        if re.match('^([xX\.]+|[\-]+|[_]+)$', tokens[0]):
             return False
         return self.is_valid_fqdn(tokens[1])
 

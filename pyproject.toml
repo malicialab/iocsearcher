@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "iocsearcher"
-version = "2.2.3"
+version = "2.3.0"
 description = "A library and command line tool for extracting indicators of compromise (IOCs) from security reports in PDF, HTML, or text formats."
 readme = "README.md"
 authors = [{ name = "MaliciaLab" }]
