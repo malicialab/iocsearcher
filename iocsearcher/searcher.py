@@ -60,7 +60,7 @@ blockchain_types = blockchain_map.keys()
 BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 
 # Normalization available for these types
-can_normalize = {"bitcoin", "email", "fqdn", "iban", "phoneNumber"}
+can_normalize = {"bitcoin", "email", "fqdn", "url", "iban", "phoneNumber"}
 
 class Searcher:
     # Static regular expressions for rearming IOCs
@@ -140,6 +140,37 @@ class Searcher:
     @classmethod
     def normalize_fqdn(cls, s):
         return s.lower()
+
+    @classmethod
+    def normalize_url(cls, s):
+        # Parse URL into components
+        # scheme://netloc/path;params?query#fragment
+        try:
+            parsed = urlparse(s)
+        except ValueError:
+            return s
+        # Handle (incorrectly parsed) URLs with no scheme
+        if (not parsed.scheme):
+            tokens = parsed.path.split('/')
+            new_netloc = tokens[0].lower()
+            if len(tokens) > 1:
+                new_path = '/'.join(tokens[1:])
+                return new_netloc + '/' + new_path
+            else:
+                return new_netloc
+        # Lower case scheme
+        new_scheme = parsed.scheme.lower()
+        parsed = parsed._replace(scheme=new_scheme)
+        # Lower case netloc
+        new_netloc= parsed.netloc.lower()
+        parsed = parsed._replace(netloc=new_netloc)
+        # Remove trailing backslash if only scheme and netloc present
+        if (parsed.scheme and (parsed.path == '/') and
+            (not parsed.params) and (not parsed.query) and
+            (not parsed.fragment)):
+            parsed = parsed._replace(path='')
+        # Return URL as a string
+        return parsed.geturl()
 
     @classmethod
     def normalize_iban(cls, s):
