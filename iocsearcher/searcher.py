@@ -39,6 +39,23 @@ lang_countries = {
     'it' : ['IT'],
 }
 
+# List of supported blockchain addresses
+blockchain_map = {
+    'bitcoin' : 'btc',
+    'bitcoincash' : 'bch',
+    'cardano' : 'ada',
+    'dashcoin' : 'dash',
+    'dogecoin' : 'doge',
+    'ethereum' : 'eth',
+    'litecoin' : 'ltc',
+    'monero' : 'xmr',
+    'ripple' : 'xrp',
+    'tezos' : 'xtz',
+    'tronix' : 'trx',
+    'zcash' : 'zec'
+}
+blockchain_types = blockchain_map.keys()
+
 # Table for computing Bitcoin Bech32 checksum
 BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 

@@ -13,7 +13,7 @@ from importlib.metadata import version
 from iocsearcher.ioc import create_ioc
 from iocsearcher.document import open_document
 from iocsearcher.doc_base import Document
-from iocsearcher.searcher import Searcher
+from iocsearcher.searcher import Searcher, blockchain_types
 
 # Set logging
 log = logging.getLogger(__name__)
@@ -102,9 +102,6 @@ def main():
         argparser.print_usage()
         sys.exit(1)
 
-    if not args.target:
-        args.target = None
-
     # Create Searcher object
     searcher = Searcher(patterns_ini=args.patterns,
                         create_ioc_fun=create_ioc)
@@ -118,6 +115,17 @@ def main():
 
     # Set for all found IOCs
     # all_iocs = set()
+
+    # Set targets
+    if args.target:
+        target_l = []
+        for t in args.target:
+            if t == 'BLOCKCHAIN':
+                target_l.extend(blockchain_types)
+            else:
+                target_l.append(t)
+    else:
+        target_l = None
 
     # Set output file
     if args.output:
@@ -158,7 +166,7 @@ def main():
         # Get all matches without deduplication, if needed
         if args.verbose or args.count:
             # Get all matches
-            match_l = searcher.search_raw(text, targets=args.target)
+            match_l = searcher.search_raw(text, targets=target_l)
             # Remove overlaps if requested or computing the ranking
             if args.nooverlaps or args.count:
                 match_l = searcher.remove_overlaps(match_l)
@@ -181,7 +189,7 @@ def main():
 
         # Search file
         matches = searcher.search_data(text,
-                                       targets=args.target,
+                                       targets=target_l,
                                        no_overlaps=args.nooverlaps)
         iocs.update(matches)
 
