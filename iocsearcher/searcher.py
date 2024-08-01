@@ -50,6 +50,7 @@ blockchain_map = {
     'litecoin' : 'ltc',
     'monero' : 'xmr',
     'ripple' : 'xrp',
+    'solana' : 'sol',
     'tezos' : 'xtz',
     'tronix' : 'trx',
     'zcash' : 'zec'
@@ -533,6 +534,15 @@ class Searcher:
         """Check if given string is a valid Ripple address"""
         return __class__.is_valid_base58_checksum(s,
                                               alphabet=base58.RIPPLE_ALPHABET)
+
+    @staticmethod
+    def is_valid_solana(s):
+        """Check if given string is a valid Solana address"""
+        try:
+            _decoded = base58.b58decode(s, alphabet=base58.BITCOIN_ALPHABET)
+        except ValueError:
+            return False
+        return len(_decoded) == 32
 
     @staticmethod
     def is_valid_tezos(s):

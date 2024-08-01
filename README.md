@@ -32,7 +32,7 @@ _iocsearcher_ can extract the following IOC types:
 linkedinHandle, pinterestHandle, telegramHandle, twitterHandle, whatsappHandle,
 youtubeHandle, youtubeChannel)
 - Advertisement/analytics identifiers (googleAdsense, googleAnalytics, googleTagManager)
-- Blockchain addresses (bitcoin, bitcoincash, cardano, dashcoin, dogecoin, ethereum, litecoin, monero, ripple, tezos, tronix, zcash)
+- Blockchain addresses (bitcoin, bitcoincash, cardano, dashcoin, dogecoin, ethereum, litecoin, monero, ripple, solana, tezos, tronix, zcash)
 - Payment addresses (webmoney)
 - Chinese Internet Content Provider licenses (icp)
 - Bank account numbers (iban)
@@ -68,6 +68,12 @@ the _-t (--target)_ option, which can be applied multiple times:
 
 ~~~ sh
 iocsearcher -f file.pdf -t url -t email
+~~~
+
+We also have a shortcut to scan for all blockchain addresses with -t BLOCKCHAIN
+
+~~~ sh
+iocsearcher -f file.pdf -t BLOCKCHAIN
 ~~~
 
 You can also search for IOCs in all files in a directory using
