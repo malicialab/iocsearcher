@@ -265,13 +265,27 @@ class Searcher:
             return False
 
     @classmethod
-    def is_valid_ip6(cls, s, ignore_private=True, ignore_local=True):
+    def is_valid_ip6(cls, s, ignore_private=True, ignore_local=True,
+                      ignore_multicast=True, ignore_loopback=True,
+                      ignore_reserved=True, ignore_unspecified=True):
         """Check if given string is a valid IPv6 address"""
         try:
-            ipaddress.IPv6Address(s)
-            return True
+            addr = ipaddress.IPv6Address(s)
         except ValueError:
             return False
+        if ignore_private and addr.is_private:
+            return False
+        if ignore_local and addr.is_link_local:
+            return False
+        if ignore_multicast and addr.is_multicast:
+            return False
+        if ignore_loopback and addr.is_loopback:
+            return False
+        if ignore_reserved and addr.is_reserved:
+            return False
+        if ignore_unspecified and addr.is_unspecified:
+            return False
+        return True
 
     @staticmethod
     def is_valid_ip4Net(s):
