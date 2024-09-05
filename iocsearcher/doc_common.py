@@ -9,6 +9,10 @@ import magic
 # Set logging
 log = logging.getLogger(__name__)
 
+# MIME types
+word_docx_mime = \
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
 def read_raw_file(filepath):
     """Read file contents as binary string"""
     fd = open(filepath, 'rb')

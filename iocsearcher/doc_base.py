@@ -5,13 +5,14 @@
 import logging
 import langdetect
 from iocsearcher.doc_common import get_file_mime_type,read_file_as_text
+from iocsearcher.doc_common import word_docx_mime
 
 # Set logging
 log = logging.getLogger(__name__)
 
 class Document:
     """Base class for documents. Used for text files.
-        PDF and HTML are children of this class and override its methods
+        Pdf/Word/Html are children of this class and override its methods
     """
     def __init__(self, filepath, mime_type=None):
         self.filepath = filepath
@@ -30,6 +31,11 @@ class Document:
     def is_pdf(self):
         """Return if this is a PDF document"""
         return 'pdf' in self.mime_type
+
+    @property
+    def is_word(self):
+        """Return if this is a Word document"""
+        return self.mime_type == word_docx_mime
 
     def get_metadata(self):
         """Return metadata dictionary, empty dict if no metadata"""

@@ -7,7 +7,8 @@ import logging
 from iocsearcher.doc_base import Document
 from iocsearcher.doc_epdf import ExtendedPdf
 from iocsearcher.doc_ehtml import ExtendedHtml
-from iocsearcher.doc_common import get_file_mime_type
+from iocsearcher.doc_word import Word
+from iocsearcher.doc_common import get_file_mime_type, word_docx_mime
 
 # Set logging
 log = logging.getLogger(__name__)
@@ -30,6 +31,8 @@ def open_document(filepath, create_ioc_fun=None):
           (mime_type == "text/xml")):
           doc = ExtendedHtml(filepath, mime_type=mime_type,
                               create_ioc_fun=create_ioc_fun)
+    elif mime_type == word_docx_mime:
+        doc = Word(filepath, mime_type=mime_type)
     elif ((tokens[0] == "text") or
           (mime_type == "application/csv") or
           (mime_type == "application/json")):
