@@ -6,6 +6,7 @@ import logging
 from io import StringIO
 from iocsearcher.doc_base import Document
 from docx2python import docx2python
+from docx2python.docx_text import flatten_text
 
 # Set logging
 log = logging.getLogger(__name__)
@@ -37,5 +38,23 @@ class Word(Document):
         """Return list of text elements and extraction method
             A single element with all text is currently returned.
         """
-        return ([self.doc.text],'docs2python')
+        #return ([self.doc.text],'docs2python')
+        document_runs = []
+        # Add header
+        if options.get('add_header', False):
+            document_runs += self.doc.header_runs
+        # Add body
+        document_runs += self.doc.body_runs
+        # Add footer
+        if options.get('add_footer', False):
+            document_runs += self.doc.footer_runs
+        # Add footnotes
+        if options.get('add_footnotes', True):
+            document_runs += self.doc.footnotes_runs
+        # Add endnotes
+        if options.get('add_endnotes', True):
+            document_runs += self.doc.endnotes_runs
+        # Get text
+        text = flatten_text(document_runs)
+        return ([text],'docs2python')
 
