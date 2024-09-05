@@ -38,23 +38,36 @@ class Word(Document):
         """Return list of text elements and extraction method
             A single element with all text is currently returned.
         """
-        #return ([self.doc.text],'docs2python')
-        document_runs = []
+        elements = []
         # Add header
         if options.get('add_header', False):
-            document_runs += self.doc.header_runs
+            document_runs = self.doc.header_runs
+            text = flatten_text(document_runs).strip()
+            if text:
+                elements.append(text)
         # Add body
-        document_runs += self.doc.body_runs
+        document_runs = self.doc.body_runs
+        for run in document_runs:
+            text = flatten_text([run]).strip()
+            if text:
+                elements.append(text)
         # Add footer
         if options.get('add_footer', False):
-            document_runs += self.doc.footer_runs
+            document_runs = self.doc.footer_runs
+            text = flatten_text(document_runs).strip()
+            if text:
+                elements.append(text)
         # Add footnotes
         if options.get('add_footnotes', True):
-            document_runs += self.doc.footnotes_runs
+            document_runs = self.doc.footnotes_runs
+            text = flatten_text(document_runs).strip()
+            if text:
+                elements.append(text)
         # Add endnotes
         if options.get('add_endnotes', True):
-            document_runs += self.doc.endnotes_runs
-        # Get text
-        text = flatten_text(document_runs)
-        return ([text],'docs2python')
+            document_runs = self.doc.endnotes_runs
+            text = flatten_text(document_runs).strip()
+            if text:
+                elements.append(text)
+        return (elements,'docs2python')
 
