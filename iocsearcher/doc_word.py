@@ -3,6 +3,7 @@
 # See the LICENSE file in the iocsearcher project root for license terms. 
 #
 import logging
+import re
 from io import StringIO
 from iocsearcher.doc_base import Document
 from docx2python import docx2python
@@ -35,38 +36,39 @@ class Word(Document):
             return None
 
     def get_text_elements(self, options=None):
-        """Return list of text elements and extraction method
-            A single element with all text is currently returned.
-        """
+        """Return list of text elements and extraction method"""
+        runs = []
         elements = []
         # Add header
         if options.get('add_header', False):
-            document_runs = self.doc.header_runs
-            text = flatten_text(document_runs).strip()
-            if text:
-                elements.append(text)
+            runs.append(self.doc.header_runs)
         # Add body
         document_runs = self.doc.body_runs
         for run in document_runs:
-            text = flatten_text([run]).strip()
-            if text:
-                elements.append(text)
+            runs.append([run])
         # Add footer
         if options.get('add_footer', False):
-            document_runs = self.doc.footer_runs
-            text = flatten_text(document_runs).strip()
-            if text:
-                elements.append(text)
+            runs.append(self.doc.footer_runs)
         # Add footnotes
         if options.get('add_footnotes', True):
-            document_runs = self.doc.footnotes_runs
-            text = flatten_text(document_runs).strip()
-            if text:
-                elements.append(text)
+            runs.append(self.doc.footnotes_runs)
         # Add endnotes
         if options.get('add_endnotes', True):
-            document_runs = self.doc.endnotes_runs
-            text = flatten_text(document_runs).strip()
+            runs.append(self.doc.endnotes_runs)
+        # Iterate on runs to produce elements
+        for r in runs:
+            # Get run's text
+            text = flatten_text(r).strip()
+            # Remove figure references
+            if options.get('remove_figure_refs', True):
+                text = re.sub('----media\/[a-zA-Z0-9]+\.[a-z]{3,}----',
+                              '', text)
+            # Remove consecutive tabs
+            if options.get('remove_consecutive_tabs', True):
+                text = re.sub('\n\t+', '\n', text)
+            # Remove consecutive blank lines
+            if options.get('remove_consecutive_blank_lines', True):
+                text = re.sub('(\r?\n){3,}', '\n\n', text)
             if text:
                 elements.append(text)
         return (elements,'docs2python')
