@@ -3,7 +3,7 @@
 _iocsearcher_ is a Python library and command-line tool to extract
 indicators of compromise (IOCs),
 also known as cyber observables,
-from HTML, PDF, and text files.
+from HTML, PDF, Word (.docx), and text files.
 It can identify both defanged
 (e.g., URL hx<area>xp://<area>example[DOT]com) and
 unmodified IOCs (e.g., URL ht<area>tp://<area>example.com).
@@ -51,6 +51,7 @@ IOCs are deduplicated so they only appear once.
 ~~~ sh
 iocsearcher -f file.pdf
 iocsearcher -f page.html
+iocsearcher -f document.docx
 iocsearcher -f input.txt
 ~~~
 
@@ -102,7 +103,7 @@ filetype detection, you can use the _-F (--forcetext)_ option:
 iocsearcher -f input.txt -F
 ~~~
 
-You can store the text extracted from a PDF/HTML file using the
+You can store the text extracted from a PDF/HTML/Word file using the
 _-T (--text)_ option, which will produce a .text file for each input file:
 
 ~~~ sh
@@ -161,7 +162,7 @@ python3
 >>> searcher.search_data(text)
 ~~~
 
-If the file is not a PDF, HTML, or text document,
+If the file is not a PDF, HTML, Word (.docx), or text document,
 _open_document_ throws a warning and returns None
 
 ## Defang and Rearm
