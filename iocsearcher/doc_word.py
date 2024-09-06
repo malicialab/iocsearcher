@@ -25,7 +25,8 @@ class Word(Document):
 
     def get_metadata(self, enc='utf-8'):
         """Get document metadata"""
-        return self.doc.core_properties
+        return {k: v for k, v in self.doc.core_properties.items() 
+                if v is not None}
 
     def get_title(self):
         """Return title"""
