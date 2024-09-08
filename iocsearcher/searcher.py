@@ -752,6 +752,27 @@ class Searcher:
                               iban[2:4])
         return (int(check_str)%97) == 1
 
+    @staticmethod
+    def is_valid_tox(s):
+        """Check if given string is a valid TOX ID"""
+        if len(s) != 76:
+            return False
+
+        # Public key (32 bytes) + NoSpam (4 bytes) + Checksum (2 bytes)
+        size = 64 + 8
+        _data = s[:size]
+        data = bytearray(binascii.unhexlify(_data))
+        _checksum = s[size:]
+        checksum = bytearray(binascii.unhexlify(_checksum))
+
+        # Compute checksum
+        calculated = bytearray([0x00] * 2)
+        for i in range(36):
+            calculated[i % 2] = calculated[i % 2] ^ data[i]
+
+        # Compare calculated and checksum
+        return bytes(calculated) == checksum
+
     def add_regexp(self, ioc_name, ioc_pattern, flags=0, validate=False):
         """Adds regexp. Returns true if regexp added"""
         # Add IOC to validation list
