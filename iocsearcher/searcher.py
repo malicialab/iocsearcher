@@ -1015,19 +1015,28 @@ class Searcher:
         """
         # Sort list by (start,length of raw_value)
         l.sort(key=lambda e : (e[2],-len(e[3])))
-        # Load list entries into dictionary and tree
+        # Create an interval tree to identify IOC overlaps
         t = IntervalTree()
+        # Accumulator for list of IOCs that will be reported
         acc = []
+        # Iterate over the input IOCs
         for (ioc_type, rearmed_value, start, raw_value) in l:
+            # Compute IOC end
             length = len(raw_value)
             end = start + length - 1
+            # Check for overlapping fields already in IntervalTree
             overlaps = t.overlap(start,end)
             should_add = True
+            # For any overlaps, check if IOC is contained
+            # If so, ignore IOC
             for interval in overlaps:
                 if (start >= interval.begin) and (end <= interval.end):
                     should_add = False
+            # If not contained, include it
             if should_add:
                 acc.append((ioc_type, rearmed_value, start, raw_value))
+            # Add IOC to IntervalTree
             t[start:end] = (ioc_type, rearmed_value, start, raw_value)
+        # Return non-overlapping fields
         return acc
 
