@@ -5,12 +5,12 @@
 import os
 import re
 import logging
+import configparser
 import ipaddress
 import phonenumbers
 from base64 import b32decode
 from hashlib import sha3_256, sha256
 from urllib.parse import urlparse
-import configparser as ConfigParser
 from intervaltree import Interval, IntervalTree
 import base58
 import bech32
@@ -789,8 +789,8 @@ class Searcher:
         """Reads regexps in INI file. Returns number of regexps added"""
         ctr = 0
         # Read configuration file
-        config = ConfigParser.SafeConfigParser()
-        config.readfp(open(filepath, "r", encoding="utf8"))
+        config = configparser.ConfigParser()
+        config.read_file(open(filepath, "r", encoding="utf8"))
 
         # Iterate on sections
         for sec in config.sections():
@@ -799,7 +799,7 @@ class Searcher:
             # Read pattern
             try:
                 ioc_pattern = config.get(sec, 'pattern')
-            except ConfigParser.Error as exc:
+            except configparser.Error as exc:
                 log.warning("Could not extract pattern in %s: %s" % (sec, exc))
                 continue
 
@@ -816,13 +816,13 @@ class Searcher:
                         flags |= re.UNICODE
                     else:
                         log.warning("Unknown flag %s" % flags_str)
-            except ConfigParser.Error:
+            except configparser.Error:
                 flags = 0
 
             # Read whether IOC needs to be validated
             try:
                 validate = config.getboolean(sec, 'validate')
-            except ConfigParser.Error:
+            except configparser.Error:
                 validate = False
 
             # Add regexp
