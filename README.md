@@ -39,6 +39,7 @@ youtubeHandle, youtubeChannel)
 - Trademarks (trademark)
 - Universal unique identifiers (uuid)
 - Android package name (packageName)
+- MITRE ATT&CK Technique identifiers (ttp)
 - Spanish NIF identifiers (nif)
 
 ## Command Line Usage
