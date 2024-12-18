@@ -1013,8 +1013,8 @@ class Searcher:
         """Remove overlapping indicators
             Assumes input is list of (type, rearmed_val, start_off, raw_val)
         """
-        # Sort list by (start,length of raw_value)
-        l.sort(key=lambda e : (e[2],-len(e[3])))
+        # Sort list by (start,length of raw_value,type)
+        l.sort(key=lambda e : (e[2],-len(e[3]), e[0]))
         # Create an interval tree to identify IOC overlaps
         t = IntervalTree()
         # Accumulator for list of IOCs that will be reported
