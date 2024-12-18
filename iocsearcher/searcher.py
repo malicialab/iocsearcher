@@ -68,8 +68,6 @@ class Searcher:
     re_dots = re.compile(r'\[\.\]|\[\]|\(dot\)|\[dot\]|\(\.\)', re.I)
     re_at = re.compile(r' at |\(at\)| \(at\) |\[at\]| \[at\] ', re.I)
     re_http = re.compile(r'^(hxxp|h___p|httx|hpp)', re.I)
-    re_private_ip4 = re.compile(r'^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1]))')
-    re_local_ip4 = re.compile(r'^(127\.)')
     re_ethereum_nonchecksummed = re.compile(
                                     "^(0x)?([0-9a-f]{40}|[0-9A-F]{40})$")
 
@@ -250,19 +248,27 @@ class Searcher:
         return (len(tokens) > 1) and self.is_valid_tld(tokens[0])
 
     @classmethod
-    def is_valid_ip4(cls, s, ignore_private=True, ignore_local=True):
+    def is_valid_ip4(cls, s, ignore_private=True, ignore_local=True,
+                      ignore_multicast=True, ignore_loopback=True,
+                      ignore_reserved=True, ignore_unspecified=True):
         """Check if given string is a valid IPv4 address"""
         try:
-            ipaddress.IPv4Address(s)
-            if ignore_private:
-                if cls.re_private_ip4.match(s) is not None:
-                    return False
-            if ignore_local:
-                if cls.re_local_ip4.match(s) is not None:
-                    return False
-            return True
+            addr = ipaddress.IPv4Address(s)
         except ValueError:
             return False
+        if ignore_private and addr.is_private:
+            return False
+        if ignore_local and addr.is_link_local:
+            return False
+        if ignore_multicast and addr.is_multicast:
+            return False
+        if ignore_loopback and addr.is_loopback:
+            return False
+        if ignore_reserved and addr.is_reserved:
+            return False
+        if ignore_unspecified and addr.is_unspecified:
+            return False
+        return True
 
     @classmethod
     def is_valid_ip6(cls, s, ignore_private=True, ignore_local=True,
