@@ -1046,3 +1046,24 @@ class Searcher:
         # Return non-overlapping fields
         return acc
 
+    def normalize_text(self, text, targets=None):
+        """Normalize text replacing IOCs with macros"""
+        # Extract raw matches
+        raw_matches = self.search_raw(text, targets=targets)
+        # Remove overlaps
+        raw_matches = self.remove_overlaps(raw_matches)
+        # Replace matches with macros
+        ioc_cnt = {}
+        macros = {}
+        new_text = text
+        for ioc_type, ioc_value, start, raw_value in raw_matches:
+            ctr = ioc_cnt.get(ioc_type, 0)
+            if ctr == 0:
+                macro = "<%s>" % ioc_type.upper()
+            else:
+                macro = "<%s%d>" % (ioc_type.upper(), ctr)
+            new_text = new_text.replace(raw_value, macro)
+            macros[macro] = raw_value
+            ioc_cnt[ioc_type] = ctr + 1
+        return new_text, macros
+
