@@ -32,7 +32,7 @@ _iocsearcher_ can extract the following IOC types:
 linkedinHandle, pinterestHandle, telegramHandle, twitterHandle, whatsappHandle,
 youtubeHandle, youtubeChannel)
 - Advertisement/analytics identifiers (googleAdsense, googleAnalytics, googleTagManager)
-- Blockchain addresses (bitcoin, bitcoincash, cardano, dashcoin, dogecoin, ethereum, litecoin, monero, ripple, solana, tezos, tronix, zcash)
+- Blockchain addresses (bitcoin, bitcoincash, cardano, dashcoin, dogecoin, ethereum, litecoin, monero, ripple, solana, tezos, tron, zcash)
 - Payment addresses (webmoney)
 - Chinese Internet Content Provider licenses (icp)
 - Bank account numbers (iban)

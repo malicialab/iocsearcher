@@ -52,7 +52,7 @@ blockchain_map = {
     'ripple' : 'xrp',
     'solana' : 'sol',
     'tezos' : 'xtz',
-    'tronix' : 'trx',
+    'tron' : 'trx',
     'zcash' : 'zec'
 }
 blockchain_types = blockchain_map.keys()
@@ -570,8 +570,8 @@ class Searcher:
         return __class__.is_valid_base58_checksum(s)
 
     @staticmethod
-    def is_valid_tronix(s):
-        """Check if given string is a valid Tronix address"""
+    def is_valid_tron(s):
+        """Check if given string is a valid Tron address"""
         return __class__.is_valid_base58_checksum(s)
 
     @staticmethod
