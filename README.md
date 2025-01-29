@@ -41,6 +41,7 @@ youtubeHandle, youtubeChannel)
 - Android package name (packageName)
 - MITRE ATT&CK Technique identifiers (ttp)
 - Spanish NIF identifiers (nif)
+- Amazon Resource Names (arn)
 
 ## Command Line Usage
 
