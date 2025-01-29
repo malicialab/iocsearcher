@@ -779,17 +779,20 @@ class Searcher:
         # Compare calculated and checksum
         return bytes(calculated) == checksum
 
-    def add_regexp(self, ioc_name, ioc_pattern, flags=0, validate=False):
-        """Adds regexp. Returns true if regexp added"""
+    def add_regexp(self, ioc_name, ioc_pattern, validate=False):
+        """Adds compiled regexp. Returns true if regexp added"""
         # Add IOC to validation list
         if validate:
             self.validate.add(ioc_name)
         # Compile regexp and store it
         if ioc_name and ioc_pattern:
-            ioc_regex = re.compile(ioc_pattern, flags)
-            self.patterns.setdefault(ioc_name, []).append(ioc_regex)
+            self.patterns.setdefault(ioc_name, []).append(ioc_pattern)
             return True
         return False
+
+    def remove_regexps(self, ioc_name):
+        """Remove all regexps for given ioc_name"""
+        del self.patterns[ioc_name]
 
     def read_patterns(self, filepath):
         """Reads regexps in INI file. Returns number of regexps added"""
@@ -831,9 +834,11 @@ class Searcher:
             except configparser.Error:
                 validate = False
 
-            # Add regexp
-            if self.add_regexp(ioc_name, ioc_pattern,
-                                flags=flags, validate=validate):
+            # Compile regexp and store it
+            compiled_regexp = re.compile(ioc_pattern, flags)
+
+            # Add compiled regexp
+            if self.add_regexp(ioc_name, compiled_regexp, validate=validate):
                 ctr += 1
 
         return ctr
@@ -1063,7 +1068,7 @@ class Searcher:
             else:
                 macro = "<%s%d>" % (ioc_type.upper(), ctr)
             new_text = new_text.replace(raw_value, macro)
-            macros[macro] = raw_value
+            macros[macro] = (ioc_type, ioc_value, raw_value)
             ioc_cnt[ioc_type] = ctr + 1
         return new_text, macros
 
