@@ -1051,7 +1051,7 @@ class Searcher:
         # Return non-overlapping fields
         return acc
 
-    def normalize_text(self, text, targets=None):
+    def normalize_text(self, text, targets=None, macros=None):
         """Normalize text replacing IOCs with macros"""
         # Extract raw matches
         raw_matches = self.search_raw(text, targets=targets)
@@ -1059,16 +1059,22 @@ class Searcher:
         raw_matches = self.remove_overlaps(raw_matches)
         # Replace matches with macros
         ioc_cnt = {}
-        macros = {}
+        replacements = {}
         new_text = text
         for ioc_type, ioc_value, start, raw_value in raw_matches:
-            ctr = ioc_cnt.get(ioc_type, 0)
-            if ctr == 0:
-                macro = "<%s>" % ioc_type.upper()
-            else:
-                macro = "<%s%d>" % (ioc_type.upper(), ctr)
+            # Select appropriate macro
+            macro = macros.get(ioc_type, None) if macros else None
+            if macro is None:
+                ctr = ioc_cnt.get(ioc_type, 0)
+                if ctr == 0:
+                    macro = "<%s>" % ioc_type.upper()
+                else:
+                    macro = "<%s%d>" % (ioc_type.upper(), ctr)
+                ioc_cnt[ioc_type] = ctr + 1
+            # Replace raw value with macro at all positions
             new_text = new_text.replace(raw_value, macro)
-            macros[macro] = (ioc_type, ioc_value, raw_value)
-            ioc_cnt[ioc_type] = ctr + 1
-        return new_text, macros
+            # Store replacement info
+            replacements[macro] = (ioc_type, ioc_value, raw_value)
+        # Return text and replacement info
+        return new_text, replacements
 
