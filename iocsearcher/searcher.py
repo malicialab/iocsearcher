@@ -198,14 +198,16 @@ class Searcher:
     def is_valid_fqdn(self, s):
         """Check if given string ends with valid TLD according to IANA"""
         # Check valid characters
-        if not re.match('^(\*\.)?[a-zA-Z0-9\-\.]+$', s):
+        if not re.match('^(\*\.)?[a-zA-Z0-9_\-\.]+$', s):
             return False
         # Parse fqdn into labels
         labels = s.split('.')
         # Check there are at least two labels
-        if len(labels) < 2:
+        num_labels = len(labels)
+        if num_labels < 2:
             return False
         # Check the labels
+        ctr = num_labels
         for l in labels:
             # No label should be empty
             if not l:
@@ -213,6 +215,11 @@ class Searcher:
             # According to RFC 5322 labels should not start or end with hyphen
             if l[0] == '-' or l[-1] == '-':
                 return False
+            # We are lenient in accepting underscores in FQDNs,
+            # except if they appear in SLD or TLD
+            if ctr <= 2 and '_' in l:
+                return False
+            ctr -= 1
         # Filter domains that are all in lowercase,
         # except for the first character of the TLD
         # This may happen when the text does not place a space after a period
