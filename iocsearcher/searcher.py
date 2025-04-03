@@ -160,8 +160,20 @@ class Searcher:
         # Lower case scheme
         new_scheme = parsed.scheme.lower()
         parsed = parsed._replace(scheme=new_scheme)
-        # Lower case netloc
-        new_netloc= parsed.netloc.lower()
+        # Lower case hostname and remove trailing dot if present
+        if parsed.username or parsed.password:
+            credentials = "{}:{}@".format(parsed.username, parsed.password)
+        else:
+            credentials = ""
+        if parsed.port:
+            port = ":{}".format(parsed.port)
+        else:
+            port = ""
+        if parsed.hostname[-1] == '.':
+            hostname = parsed.hostname[:-1]
+        else:
+            hostname = parsed.hostname
+        new_netloc = "{}{}{}".format(credentials, hostname, port)
         parsed = parsed._replace(netloc=new_netloc)
         # Remove trailing backslash if only scheme and netloc present
         if (parsed.scheme and (parsed.path == '/') and
@@ -200,6 +212,9 @@ class Searcher:
         # Check valid characters
         if not re.match('^(\*\.)?[a-zA-Z0-9_\-\.]+$', s):
             return False
+        # Remove trailing dot if present
+        if s[-1] == '.':
+            s = s[:-1]
         # Parse fqdn into labels
         labels = s.split('.')
         # Check there are at least two labels
