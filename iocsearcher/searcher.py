@@ -17,6 +17,7 @@ import bech32
 import binascii
 import cashaddress
 import cbor
+import struct
 from eth_hash.auto import keccak
 import iocsearcher.ioc
 import iocsearcher.monero.base58
@@ -51,6 +52,7 @@ blockchain_map = {
     'monero' : 'xmr',
     'ripple' : 'xrp',
     'solana' : 'sol',
+    'stellar' : 'xlm',
     'tezos' : 'xtz',
     'tron' : 'trx',
     'zcash' : 'zec'
@@ -585,6 +587,37 @@ class Searcher:
         except ValueError:
             return False
         return len(_decoded) == 32
+
+    @staticmethod
+    def is_valid_stellar(s):
+        """Check if given string is a valid Stellar address"""
+        # Check human-readable part (HRP)
+        if s[0] != 'G':
+            return False
+
+        # Decode address
+        try:
+            decoded = b32decode(s)
+        except binascii.Error:
+            return False
+
+        # Get fields
+        version_byte = decoded[0:1]
+        payload = decoded[0:-2]
+        data = decoded[1:-2]
+        checksum = decoded[-2:]
+
+        # Check type is 'account'
+        account_version = binascii.a2b_hex('30')
+        if version_byte != account_version:
+            return False
+
+        # Compute checksum
+        computed_checksum = binascii.crc_hqx(payload, 0)
+        computed_checksum = struct.pack('<H', computed_checksum)
+
+        # Validate checksum
+        return computed_checksum == checksum
 
     @staticmethod
     def is_valid_tezos(s):

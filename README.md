@@ -24,6 +24,7 @@ _iocsearcher_ can extract the following IOC types:
 - IP subnets (ip4Net)
 - Hashes (md5, sha1, sha256)
 - Email addresses (email)
+- Blockchain addresses (bitcoin, bitcoincash, cardano, dashcoin, dogecoin, ethereum, litecoin, monero, ripple, solana, stellar, tezos, tron, zcash)
 - Phone numbers (phoneNumber)
 - Copyright strings (copyright)
 - CVE vulnerability identifiers (cve)
@@ -32,7 +33,6 @@ _iocsearcher_ can extract the following IOC types:
 linkedinHandle, pinterestHandle, telegramHandle, twitterHandle, whatsappHandle,
 youtubeHandle, youtubeChannel)
 - Advertisement/analytics identifiers (googleAdsense, googleAnalytics, googleTagManager)
-- Blockchain addresses (bitcoin, bitcoincash, cardano, dashcoin, dogecoin, ethereum, litecoin, monero, ripple, solana, tezos, tron, zcash)
 - Payment addresses (webmoney)
 - Chinese Internet Content Provider licenses (icp)
 - Bank account numbers (iban)
