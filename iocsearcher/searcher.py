@@ -18,7 +18,9 @@ import binascii
 import cashaddress
 import cbor
 import struct
+import solders
 from eth_hash.auto import keccak
+from solders.pubkey import Pubkey
 import iocsearcher.ioc
 import iocsearcher.monero.base58
 
@@ -582,11 +584,8 @@ class Searcher:
     @staticmethod
     def is_valid_solana(s):
         """Check if given string is a valid Solana address"""
-        try:
-            _decoded = base58.b58decode(s, alphabet=base58.BITCOIN_ALPHABET)
-        except ValueError:
-            return False
-        return len(_decoded) == 32
+        pub_key = Pubkey.from_string(s)
+        return (pub_key.LENGTH == 32) and pub_key.is_on_curve()
 
     @staticmethod
     def is_valid_stellar(s):

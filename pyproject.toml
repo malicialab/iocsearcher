@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "iocsearcher"
-version = "2.5.7"
+version = "2.5.8"
 description = "A library and command line tool for extracting indicators of compromise (IOCs) from security reports in PDF, HTML, or text formats."
 readme = "README.md"
 authors = [{ name = "MaliciaLab" }]
@@ -22,6 +22,7 @@ dependencies = [
     "bech32",
     "cashaddress",
     "cbor",
+    "docx2python",
     "eth-hash[pycryptodome]",
     "intervaltree",
     "langdetect",
@@ -30,7 +31,7 @@ dependencies = [
     "phonenumbers",
     "python-magic",
     "readabilipy",
-    "docx2python",
+    "solders",
 ]
 
 [project.optional-dependencies]
