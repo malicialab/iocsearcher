@@ -65,7 +65,21 @@ blockchain_types = blockchain_map.keys()
 BECH32_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 
 # Normalization available for these types
-can_normalize = {"bitcoin", "email", "fqdn", "url", "iban", "phoneNumber"}
+can_normalize = {
+    'bitcoin',
+    'email',
+    'facebookHandle',
+    'fqdn',
+    'githubHandle',
+    'iban',
+    'instagramHandle',
+    'phoneNumber',
+    'pinterestHandle',
+    'telegramHandle',
+    'twitterHandle',
+    'url',
+    'youtubeHandle'
+}
 
 class Searcher:
     # Static regular expressions for rearming IOCs
@@ -142,6 +156,34 @@ class Searcher:
 
     @classmethod
     def normalize_fqdn(cls, s):
+        return s.lower()
+
+    @classmethod
+    def normalize_facebookHandle(cls, s):
+        return s.lower()
+
+    @classmethod
+    def normalize_githubHandle(cls, s):
+        return s.lower()
+
+    @classmethod
+    def normalize_instagramHandle(cls, s):
+        return s.lower()
+
+    @classmethod
+    def normalize_pinterestHandle(cls, s):
+        return s.lower()
+
+    @classmethod
+    def normalize_telegramHandle(cls, s):
+        return s.lower()
+
+    @classmethod
+    def normalize_twitterHandle(cls, s):
+        return s.lower()
+
+    @classmethod
+    def normalize_youtubeHandle(cls, s):
         return s.lower()
 
     @classmethod
