@@ -649,17 +649,17 @@ class Searcher:
     @staticmethod
     def is_valid_facebookHandle(s):
         """Check if given string is a valid Facebook handle"""
-        return s not in {'about', 'ads', 'business', 'dialog', 'docs',
+        return s not in {'2008', 'about', 'ads', 'business', 'dialog', 'docs',
                             'events', 'help',
-                            'full', 'groups', 'legal', 'pages',
+                            'full', 'groups', 'legal', 'pages', 'people',
                             'plugins', 'policy', 'policy.php', 'policies',
-                            'privacy', 'settings', 'share', 'share.php',
-                            'sharer', 'sharer.php'}
+                            'privacy', 'profile.php', 'settings',
+                            'share', 'share.php', 'sharer', 'sharer.php'}
 
     @staticmethod
     def is_valid_instagramHandle(s):
         """Check if given string is a valid Instagram handle"""
-        return s not in {'about', 'legal'}
+        return s not in {'about', 'invites', 'legal'}
 
     @staticmethod
     def is_valid_pinterestHandle(s):
@@ -683,7 +683,7 @@ class Searcher:
         """Check if given string is a valid YouTube handle"""
         return s not in {'channel', 'embed', 'feed', 'iframe',
                           'player', 'playlist', 'privacynotice',
-                          'static', 'watch', 'yt'}
+                          'shorts', 'static', 'user', 'watch', 'yt'}
 
     @staticmethod
     def is_valid_youtubeChannel(s):
