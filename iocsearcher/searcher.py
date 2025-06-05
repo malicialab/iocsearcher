@@ -626,7 +626,10 @@ class Searcher:
     @staticmethod
     def is_valid_solana(s):
         """Check if given string is a valid Solana address"""
-        pub_key = Pubkey.from_string(s)
+        try:
+            pub_key = Pubkey.from_string(s)
+        except ValueError:
+            return False
         return (pub_key.LENGTH == 32) and pub_key.is_on_curve()
 
     @staticmethod
