@@ -1132,8 +1132,9 @@ class Searcher:
         # Iterate over the input IOCs
         for (ioc_type, rearmed_value, start, raw_value) in l:
             # Compute IOC end
+            # IntervalTree uses ranges of type [start,end)
             length = len(raw_value)
-            end = start + length - 1
+            end = start + length
             # Check for overlapping fields already in IntervalTree
             overlaps = t.overlap(start,end)
             should_add = True
