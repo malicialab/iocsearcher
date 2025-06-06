@@ -91,6 +91,9 @@ def main():
     argparser.add_argument('-C', '--count', action='store_true',
        help = 'Rank indicators by the number of times they appear.')
 
+    argparser.add_argument('-N', '--normalize', action='store_true',
+        help='store normalized text into file with .normalized extension')
+
     argparser.add_argument('-V', '--version', action='version',
             version=version('iocsearcher'))
 
@@ -242,6 +245,15 @@ def main():
             fd = open(text_filepath, "w")
             fd.write(text)
             fd.close()
+
+        # Output normalized text to file
+        if args.normalize:
+            normalized_text, _ = searcher.normalize_text(text)
+            text_filepath = filepath + '.normalized'
+            fd = open(text_filepath, "w")
+            fd.write(normalized_text)
+            fd.close()
+
 
         # Store IOCs
         # all_iocs.update(iocs)
