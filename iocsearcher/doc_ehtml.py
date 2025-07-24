@@ -12,6 +12,11 @@ from iocsearcher.doc_html import Html
 # Set logging
 log = logging.getLogger(__name__)
 
+def cfDecodeEmail(encodedString):
+    r = int(encodedString[:2],16)
+    email = ''.join([chr(int(encodedString[i:i+2], 16) ^ r) for i in range(2, len(encodedString), 2)])
+    return email
+
 class ExtendedHtml(Html):
     tmap = {
         'alternateName' : 'organization',
