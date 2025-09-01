@@ -281,10 +281,14 @@ class Searcher:
             if ctr <= 2 and '_' in l:
                 return False
             ctr -= 1
+        # Get TLD
+        tld = labels[-1]
+        # Special handling of .onion domains
+        if (tld == 'onion'):
+            return self.is_valid_onionAddress(labels[-2])
         # Filter domains that are all in lowercase,
         # except for the first character of the TLD
         # This may happen when the text does not place a space after a period
-        tld = labels[-1]
         num_uppercase = sum(1 for c in s if c.isupper())
         if (num_uppercase == 1) and tld[0].isupper():
             return False
