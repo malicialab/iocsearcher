@@ -25,16 +25,6 @@ logging.getLogger("pdfminer.pdfinterp").setLevel(logging.CRITICAL)
 logging.getLogger("pdfminer.converter").setLevel(logging.CRITICAL)
 logging.getLogger("pdfminer.cmapdb").setLevel(logging.CRITICAL)
 
-# Log warn and above to stderr
-#formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
-formatter = logging.Formatter(u'%(message)s')
-handler_stderr = logging.StreamHandler(sys.stderr)
-handler_stderr.setLevel(logging.INFO)
-handler_stderr.setFormatter(formatter)
-root = logging.getLogger()
-root.setLevel(logging.INFO)
-root.addHandler(handler_stderr)
-
 
 def main():
 
@@ -82,8 +72,11 @@ def main():
     argparser.add_argument('-T', '--text', action='store_true',
         help='store file text into separate file with .text extension')
 
+    argparser.add_argument('-a', '--all', action='store_true',
+        help='Disables deduplication. Outputs all match locations')
+
     argparser.add_argument('-v', '--verbose', action='store_true',
-        help='verbose. Prints match location and defanged value')
+        help='verbose. Prints debug information')
 
     argparser.add_argument('-P', '--patterns',
        help = 'Use patterns in this file instead of the default patterns.')
@@ -104,6 +97,22 @@ def main():
         log.warning("No input file. Use -f or -d options")
         argparser.print_usage()
         sys.exit(1)
+
+    # Choose log message level
+    if args.verbose:
+        debug_level = logging.DEBUG
+    else:
+        debug_level = logging.INFO
+
+    # Enable logging
+    #formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
+    formatter = logging.Formatter(u'%(message)s')
+    handler_stderr = logging.StreamHandler(sys.stderr)
+    handler_stderr.setLevel(debug_level)
+    handler_stderr.setFormatter(formatter)
+    root = logging.getLogger()
+    root.setLevel(debug_level)
+    root.addHandler(handler_stderr)
 
     # Create Searcher object
     searcher = Searcher(patterns_ini=args.patterns,
@@ -167,7 +176,7 @@ def main():
             out_fd = open(ioc_filepath, "w")
 
         # Get all matches without deduplication, if needed
-        if args.verbose or args.count:
+        if args.all or args.count:
             # Get all matches
             match_l = searcher.search_raw(text, targets=target_l)
             # Remove overlaps if requested or computing the ranking

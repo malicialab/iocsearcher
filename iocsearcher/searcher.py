@@ -1026,6 +1026,9 @@ class Searcher:
                     if ioc_name in ["email", "fqdn", "ip4", "ip4Net", "url"]:
                         rearm_func = getattr(self, "rearm_" + ioc_name)
                         rearmed_value = rearm_func(raw_value)
+                        if rearmed_value != raw_value:
+                            log.debug("  Rearmed %s as %s" % (
+                                      raw_value, rearmed_value))
                     else:
                         rearmed_value = raw_value
 
@@ -1034,9 +1037,8 @@ class Searcher:
                         validate_func = getattr(self, "is_valid_" + ioc_name)
                         if (not validate_func(rearmed_value)):
                             log.debug(
-                                "Droping invalid %s match: %s @ %d Raw: %s" % (
-                                          ioc_name, rearmed_value,
-                                          start_offset, raw_value))
+                                "  Droping invalid %s match %s" % (
+                                          ioc_name, rearmed_value))
                             continue
 
                     # Normalize value
