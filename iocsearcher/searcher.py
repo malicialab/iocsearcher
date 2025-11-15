@@ -188,6 +188,9 @@ class Searcher:
 
     @classmethod
     def normalize_url(cls, s):
+        # If URL has no scheme, add a temporary one
+        if "://" not in s[:16]:
+            s = "test://" + s
         # Parse URL into components
         # scheme://netloc/path;params?query#fragment
         try:
@@ -208,17 +211,21 @@ class Searcher:
         parsed = parsed._replace(scheme=new_scheme)
         # Lower case hostname and remove trailing dot if present
         if parsed.username or parsed.password:
-            credentials = "{}:{}@".format(parsed.username, parsed.password)
+            credentials = "{}:{}@".format(parsed.username,
+                                          parsed.password)
         else:
             credentials = ""
         if parsed.port:
             port = ":{}".format(parsed.port)
         else:
             port = ""
-        if parsed.hostname[-1] == '.':
-            hostname = parsed.hostname[:-1]
+        if parsed.hostname:
+            if parsed.hostname[-1] == '.':
+                hostname = parsed.hostname[:-1]
+            else:
+                hostname = parsed.hostname
         else:
-            hostname = parsed.hostname
+            hostname = ""
         new_netloc = "{}{}{}".format(credentials, hostname, port)
         parsed = parsed._replace(netloc=new_netloc)
         # Remove trailing backslash if only scheme and netloc present
@@ -226,8 +233,13 @@ class Searcher:
             (not parsed.params) and (not parsed.query) and
             (not parsed.fragment)):
             parsed = parsed._replace(path='')
+        # Get normalized URL
+        url = parsed.geturl()
+        # Remove temporary scheme
+        if url.startswith("test://"):
+            url = url[7:]
         # Return URL as a string
-        return parsed.geturl()
+        return url
 
     @classmethod
     def normalize_iban(cls, s):
