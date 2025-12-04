@@ -806,7 +806,11 @@ class Searcher:
             if not s.endswith('d'):
                 return False
             # Validate the embedded checksum
-            decoded = b32decode(s.upper())
+            try:
+                decoded = b32decode(s.upper())
+            except:
+                log.debug("  Could not b32decode %s" % s.upper())
+                return False
             v3_pubkey = decoded[:32]
             v3_checksum = decoded[32:34]
             v3_version = int(3).to_bytes(1, 'little')
