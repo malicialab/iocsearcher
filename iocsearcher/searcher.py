@@ -949,8 +949,13 @@ class Searcher:
                 # Replace macro
                 ioc_pattern = ioc_pattern.replace(macro_str, repl)
 
-            # Temporarily store raw pattern with replaced macros
-            raw_patterns[ioc_name] = ioc_pattern
+            # Temporarily store raw pattern with replaced macros and without boundary
+            tmp_pattern = ioc_pattern
+            if tmp_pattern.startswith('\\b'):
+                tmp_pattern = tmp_pattern[2:]
+            if tmp_pattern.endswith('\\b'):
+                tmp_pattern = tmp_pattern[:-2]
+            raw_patterns[ioc_name] = tmp_pattern
 
             # Read whether auxiliary pattern
             try:
