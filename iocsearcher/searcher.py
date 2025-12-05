@@ -106,6 +106,8 @@ class Searcher:
         self.tlds = self.read_tlds(self.tld_filepath)
         self.tlds.add("onion")
         log.debug("Read %d TLDs" % len(self.tlds))
+        # Initialize auxiliary patterns
+        self.auxiliary_patterns = {}
         # Initialize patterns
         self.patterns = {}
         # Read patterns
@@ -922,14 +924,32 @@ class Searcher:
 
         # Iterate on sections
         for sec in config.sections():
-            # IOC name is section without trailing digits separated by hyphen
+            # Read IOC name, i.e., section without trailing digits separated by hyphen
             ioc_name = re.sub('\-[0-9]+$','', sec)
+
             # Read pattern
             try:
                 ioc_pattern = config.get(sec, 'pattern')
             except configparser.Error as exc:
                 log.warning("Could not extract pattern in %s: %s" % (sec, exc))
                 continue
+
+            # Read whether auxiliary pattern
+            try:
+                auxiliary = config.getboolean(sec, 'auxiliary')
+            except configparser.Error:
+                auxiliary = False
+
+            # If auxiliary pattern, store it separately and ignore other fields
+            if auxiliary:
+                self.auxiliary_patterns[ioc_name] = ioc_pattern
+                continue
+
+            # Otherwise, replace any auxiliary patterns used
+            for aux_name, aux_pattern in self.auxiliary_patterns.items():
+                # log.debug("Replacing %s in %s" % (aux_name, ioc_pattern))
+                aux_re = re.compile("(##" + aux_name + "##)")
+                ioc_pattern = re.sub(aux_re, aux_pattern, ioc_pattern)
 
             # Read flags
             try:
