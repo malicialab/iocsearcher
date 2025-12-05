@@ -106,8 +106,6 @@ class Searcher:
         self.tlds = self.read_tlds(self.tld_filepath)
         self.tlds.add("onion")
         log.debug("Read %d TLDs" % len(self.tlds))
-        # Initialize auxiliary patterns
-        self.auxiliary_patterns = {}
         # Initialize patterns
         self.patterns = {}
         # Read patterns
@@ -918,6 +916,9 @@ class Searcher:
     def read_patterns(self, filepath):
         """Reads regexps in INI file. Returns number of regexps added"""
         ctr = 0
+        raw_patterns = {}
+        re_macro = re.compile("\(##([a-z0-9]+)##\)")
+
         # Read configuration file
         config = configparser.ConfigParser()
         config.read_file(open(filepath, "r", encoding="utf8"))
@@ -934,22 +935,32 @@ class Searcher:
                 log.warning("Could not extract pattern in %s: %s" % (sec, exc))
                 continue
 
+            # Replace macros in pattern
+            macros = set(re.findall(re_macro, ioc_pattern))
+            for macro in macros:
+                macro_str = "(##" + macro + "##)"
+                # Find replacement pattern
+                repl = raw_patterns.get(macro, None)
+                if not repl:
+                    log.error("Could not find pattern for %s in %s pattern" %
+                              (macro_str, ioc_name))
+                    continue
+                log.debug("Replacing macro %s in pattern for %s" % (macro_str, ioc_name))
+                # Replace macro
+                ioc_pattern = ioc_pattern.replace(macro_str, repl)
+
+            # Temporarily store raw pattern with replaced macros
+            raw_patterns[ioc_name] = ioc_pattern
+
             # Read whether auxiliary pattern
             try:
                 auxiliary = config.getboolean(sec, 'auxiliary')
             except configparser.Error:
                 auxiliary = False
 
-            # If auxiliary pattern, store it separately and ignore other fields
+            # If auxiliary pattern, ignore other fields
             if auxiliary:
-                self.auxiliary_patterns[ioc_name] = ioc_pattern
                 continue
-
-            # Otherwise, replace any auxiliary patterns used
-            for aux_name, aux_pattern in self.auxiliary_patterns.items():
-                # log.debug("Replacing %s in %s" % (aux_name, ioc_pattern))
-                aux_re = re.compile("(##" + aux_name + "##)")
-                ioc_pattern = re.sub(aux_re, aux_pattern, ioc_pattern)
 
             # Read flags
             try:
@@ -974,6 +985,7 @@ class Searcher:
                 validate = False
 
             # Compile regexp and store it
+            # log.debug("Adding %s : %s" % (ioc_name, ioc_pattern))
             compiled_regexp = re.compile(ioc_pattern, flags)
 
             # Add compiled regexp
