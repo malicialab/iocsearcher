@@ -6,6 +6,7 @@ import os
 import re
 import logging
 import configparser
+import csv
 import ipaddress
 import phonenumbers
 from base64 import b32decode
@@ -32,6 +33,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 data_dir = os.path.join(script_dir, 'data/')
 default_patterns_file = os.path.join(data_dir, 'patterns.ini')
 default_tlds_file = os.path.join(data_dir, 'tlds-alpha-by-domain.txt')
+default_schemes_file = os.path.join(data_dir, 'iana_schemes.txt')
 
 # Map language to countries
 lang_countries = {
@@ -89,12 +91,14 @@ class Searcher:
     re_ethereum_nonchecksummed = re.compile(
                                     "^(0x)?([0-9a-f]{40}|[0-9A-F]{40})$")
 
-    def __init__(self, patterns_ini=None, tld_filepath=None,
+    def __init__(self, patterns_ini=None, tld_filepath=None, scheme_filepath=None,
                         create_ioc_fun=None):
         # Patterns file
         self.patterns_ini = patterns_ini or default_patterns_file
         # TLDs file
         self.tld_filepath = tld_filepath or default_tlds_file
+        # Schemes file
+        self.scheme_filepath = scheme_filepath or default_schemes_file
         # IOC names to be validated
         self.validate = set()
         # IOC creation function
@@ -106,6 +110,9 @@ class Searcher:
         self.tlds = self.read_tlds(self.tld_filepath)
         self.tlds.add("onion")
         log.debug("Read %d TLDs" % len(self.tlds))
+        # Read URL schemes
+        self.schemes = self.read_schemes(self.scheme_filepath)
+        log.debug("Read %d URL schemes" % len(self.schemes))
         # Initialize patterns
         self.patterns = {}
         # Read patterns
@@ -398,6 +405,9 @@ class Searcher:
             else:
                 parsed = urlparse("http://" + s)
         except ValueError:
+            return False
+        # Check scheme is valid
+        if parsed.scheme not in self.schemes:
             return False
         # If no hostname, invalid
         if not parsed.hostname:
@@ -1016,6 +1026,16 @@ class Searcher:
             tlds.add(tld)
         fd.close()
         return tlds
+
+    @staticmethod
+    def read_schemes(filepath):
+        """Reads TLDs in IANA file and returns them as a set"""
+        with open(filepath, mode ='r') as fd:
+            csvFile = csv.DictReader(fd)
+            schemes = set()
+            for line in csvFile:
+                schemes.add(line['scheme'])
+        return schemes
 
     @staticmethod
     def build_alternate_regex(elements, match_word=True):
