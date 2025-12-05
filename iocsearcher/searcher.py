@@ -222,6 +222,8 @@ class Searcher:
         if parsed.hostname:
             if parsed.hostname[-1] == '.':
                 hostname = parsed.hostname[:-1]
+            elif ':' in parsed.hostname:
+                hostname = '[' + parsed.hostname + ']'
             else:
                 hostname = parsed.hostname
         else:
@@ -402,8 +404,11 @@ class Searcher:
             return False
         # Parse hostname
         tokens = parsed.hostname.split('.')
+        num_tokens = len(tokens)
         # Validate URLs with IP address
-        if tokens[-1].isdigit():
+        if num_tokens == 1:
+            return __class__.is_valid_ip6(parsed.hostname)
+        elif (num_tokens == 4) and tokens[-1].isdigit():
             # Avoid ipNet
             if re.match('/[0-9]{1,2}$', parsed.path):
                 return False
