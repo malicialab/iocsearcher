@@ -5,14 +5,29 @@ indicators of compromise (IOCs),
 also known as cyber observables,
 from HTML, PDF, Word (.docx), and text files.
 It can identify both defanged
-(e.g., URL hx<area>xp://<area>example[DOT]com) and
-unmodified IOCs (e.g., URL ht<area>tp://<area>example.com).
+(e.g. URL hxxp://example[.]com) and
+unmodified IOCs (e.g., URL http://example.com).
+
+
+## Contents
+
+- [Installation](#installation)
+- [Supported IOCs](#supported-iocs)
+- [Command Line Usage](#command-line-usage)
+- [Library Usage](#library-usage)
+- [Defang and Rearm](#defang-and-rearm)
+- [Customizing the Regular Expressions](#customizing-the-regular-expressions)
+- [Related Tools](#related-tools)
+- [Filtering](#filtering)
+- [License](#license)
+- [References](#references)
+- [Contributors](#contributors)
 
 ## Installation
 
-~~~ sh
+```bash
 pip install iocsearcher
-~~~
+```
 
 ## Supported IOCs
 
@@ -46,86 +61,120 @@ youtubeHandle, youtubeChannel)
 
 ## Command Line Usage
 
-To find IOCs in a given file just provide the _-f (--file)_ option.
-By default, found IOCs are printed to stdout,
-defanged IOCs are rearmed, and
-IOCs are deduplicated so they only appear once.
+### Basic usage
+To extract IOCs from a file, use the `-f` / `--file` option:
 
-~~~ sh
+```bash
 iocsearcher -f file.pdf
 iocsearcher -f page.html
 iocsearcher -f document.docx
-iocsearcher -f input.txt
-~~~
+iocsearcher -f suspicious.txt
+```
 
-You can use the _-o (--output)_ option to place IOCs to a file instead
-of stdout:
+By default:
+- Found IOCs are printed to **stdout**
+- Defanged indicators are automatically **re-armed**
+- IOCs are **deduplicated** (each unique indicator appears only once)
 
-~~~ sh
+### Write output to a file
+Use `-o` / `--output` to save results to a file instead of stdout:
+
+```bash
 iocsearcher -f file.pdf -o iocs.txt
-~~~
+```
 
-By default all regexp are applied to the input.
-If you are only interested in some specific IOC types,
-it is more efficient to specify those using
-the _-t (--target)_ option, which can be applied multiple times:
+### Search only specific IOC types
+By default all regex patterns are applied. To improve performance or focus results,  
+use `-t` / `--target` (can be repeated):
 
-~~~ sh
-iocsearcher -f file.pdf -t url -t email
-~~~
+```bash
+iocsearcher -f file.pdf -t url -t email -t ipv4
+```
 
-We also have a shortcut to scan for all blockchain addresses with -t BLOCKCHAIN
+Available targets: `url`, `email`, `ipv4`, `ipv6`, `domain`, `md5`, `sha1`, `sha256`, etc.  
+Shortcut for all blockchain-related addresses:
 
-~~~ sh
+```bash
 iocsearcher -f file.pdf -t BLOCKCHAIN
-~~~
+```
 
-You can also search for IOCs in all files in a directory using
-the _-d (--dir)_ option.
-IOCs extracted from each file will be placed in their own .iocs file.
-You can also place all IOCs founds across the input files
-in the same output file by also adding the _-o (--output)_ option:
+### Scan an entire directory
+Use `-d` / `--dir` to process every file in a directory recursively:
 
-~~~ sh
-iocsearcher -d directoryWithFiles -o all.iocs
-~~~
+```bash
+iocsearcher -d ./samples/
+```
 
-In HTML files, only the readable text is examined
-(i.e., think of the text shown by Firefox's Reader View).
-If you want to scan the whole HTML content you can use the
-_-r (--raw)_ option:
+- By default, one `<filename>.iocs` file is created per input file.
+- Combine with `-o` to aggregate **all** IOCs into a single output file:
 
-~~~ sh
+```bash
+iocsearcher -d ./samples/ -o all_iocs.txt
+```
+
+### HTML handling
+By default, only **readable text** is scanned in HTML files  
+(equivalent to Firefox/Chrome Reader View).
+
+To scan the full raw HTML source (tags included), use `-r` / `--raw`:
+
+```bash
 iocsearcher -f page.html -r
-~~~
+```
 
-If you have a file that you want to interpret as text avoiding
-filetype detection, you can use the _-F (--forcetext)_ option:
+### Force text interpretation
+Bypass filetype detection and treat any file as plain text with `-F` / `--forcetext`:
 
-~~~ sh
-iocsearcher -f input.txt -F
-~~~
+```bash
+iocsearcher -f binary.dat -F
+```
 
-You can store the text extracted from a PDF/HTML/Word file using the
-_-T (--text)_ option, which will produce a .text file for each input file:
+### Export extracted text
+Save the cleaned text extracted from PDF, Office, or HTML files with `-T` / `--text`:
 
-~~~ sh
-iocsearcher -f file.pdf -T
-~~~
+```bash
+iocsearcher -f report.pdf -T          # creates report.pdf.text
+```
 
-By default IOCs are deduplicated, you can instead output the offset of
-each IOC without deduplication by using the _-v (--verbose)_ option:
+### Verbose mode (show offsets, no deduplication)
+Display every match with its byte offset in the file:
 
-~~~ sh
+```bash
 iocsearcher -f file.pdf -v
-~~~
+```
 
-You can also produce a ranking of IOCs by number of appearances
-(without deduplication) by using the _-C (--count)_ option:
+### Count occurrences and rank IOCs
+Produce a frequency ranking of IOCs (most frequent first) with `-C` / `--count`:
 
-~~~ sh
-iocsearcher -f file.pdf -C -o rank.iocs
-~~~
+```bash
+iocsearcher -f file.pdf -C -o ranking.txt
+```
+
+### Combining options – common workflows
+```bash
+# Fast URL + email extraction from a directory
+iocsearcher -d ./phishing/ -t url -t email -o urls_emails.txt
+
+# Full raw scan of HTML files with offsets
+iocsearcher -d ./html_dump/ -r -v -o all_raw_iocs.txt
+
+# Extract text + all IOCs from a single PDF
+iocsearcher -f suspicious.pdf -T -o iocs.txt
+```
+
+### Full option reference
+| Short | Long          | Description                                           |
+|-------|---------------|-------------------------------------------------------|
+| `-f`  | `--file`      | Input file                                            |
+| `-d`  | `--dir`       | Input directory (recursive)                           |
+| `-o`  | `--output`    | Output file (single file mode)                        |
+| `-t`  | `--target`    | IOC type to extract (repeatable)                      |
+| `-r`  | `--raw`       | Scan raw HTML source instead of readable text         |
+| `-F`  | `--forcetext` | Treat file as plain text, skip filetype detection     |
+| `-T`  | `--text`      | Save extracted/cleaned text to `<file>.text`          |
+| `-v`  | `--verbose`   | Show offsets, disable deduplication                   |
+| `-C`  | `--count`     | Rank IOCs by frequency                                |
+| `-h`  | `--help`      | Show help message                                     |
 
 ## Library Usage
 
@@ -136,7 +185,7 @@ _search_raw_ to identify all matches, their offsets, and the defanged string.
 The _Searcher_ object needs to be created only once to parse the regexps.
 Then, it can be reused to find IOCs in multiple input strings.
 
-~~~ sh
+```bash
 python3
 >>> import iocsearcher
 >>> from iocsearcher.searcher import Searcher
@@ -148,13 +197,13 @@ python3
 {('email', 'contact@example.com')}
 >>> searcher.search_raw(test)
 [('email', 'contact@example.com', 16, 'contact[AT]example[dot]com'), ('fqdn', 'example.com', 27, 'example[dot]com')]
-~~~
+```
 
 You can also open a document without needing to provide its type,
 get its text, and then use a _Searcher_ object to search for IOCs in the text.
 For example, if you have a file called _file.pdf_ you can do:
 
-~~~ sh
+```bash
 python3
 >>> import iocsearcher
 >>> from iocsearcher.document import open_document
@@ -163,7 +212,7 @@ python3
 >>> text,_ = doc.get_text() if doc is not None else ""
 >>> searcher = Searcher()
 >>> searcher.search_data(text)
-~~~
+```
 
 If the file is not a PDF, HTML, Word (.docx), or text document,
 _open_document_ throws a warning and returns None
@@ -197,9 +246,9 @@ file in the GitHub repo,
 edit your copy, and pass it as input to _iocsearcher_
 using the _-P (--patterns)_ option:
 
-~~~ sh
+```bash
 iocsearcher -f file.pdf -P mypatterns.ini
-~~~
+```
 
 Note that if you add a new regexp, the output will be the outermost group
 if a group exists, and the whole match if the regexp has no groups.
@@ -269,4 +318,3 @@ Other members of the MaliciaLab at the
 [IMDEA Software Institute](http://software.imdea.org)
 have contributed fixes and helped with testing:
 Gibran Gomez, Silvia Sebastian, Srdjan Matic
-
