@@ -24,7 +24,8 @@ logging.getLogger("pdfminer.pdfpage").setLevel(logging.CRITICAL)
 logging.getLogger("pdfminer.pdfinterp").setLevel(logging.CRITICAL)
 logging.getLogger("pdfminer.converter").setLevel(logging.CRITICAL)
 logging.getLogger("pdfminer.cmapdb").setLevel(logging.CRITICAL)
-
+logging.getLogger("pdfminer.psparser").setLevel(logging.CRITICAL)
+logging.getLogger("pdfminer.pdfparser").setLevel(logging.CRITICAL)
 
 def main():
 
