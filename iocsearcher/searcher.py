@@ -77,6 +77,7 @@ can_normalize = {
     'instagramHandle',
     'phoneNumber',
     'pinterestHandle',
+    'registry',
     'telegramHandle',
     'twitterHandle',
     'url',
@@ -263,6 +264,11 @@ class Searcher:
             return ioc_value
         except:
             return s
+
+    @classmethod
+    def normalize_registry(cls, s):
+        x = s.replace(':','')
+        return x.replace('\\\\','\\')
 
     def is_valid_tld(self, s):
         """Check if given string is a valid TLD according to IANA list"""
