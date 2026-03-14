@@ -122,9 +122,6 @@ def main():
                                 if os.path.isfile(os.path.join(args.dir, f))]
         files.extend(dir_files)
 
-    # Set for all found IOCs
-    # all_iocs = set()
-
     # Set targets
     if args.target:
         target_l = []
@@ -136,16 +133,11 @@ def main():
     else:
         target_l = None
 
-    # Set output file
-    if args.output:
-        out_fd = open(args.output, 'w', encoding='utf-8')
-    else:
-        out_fd = None
-
     # Iterate on files
+    all_iocs = set()
+    all_raw_iocs = {}
     for filepath in sorted(files):
         log.info("Searching into %s" % filepath)
-        iocs = set()
 
         # Open document
         if (not args.forcetext):
@@ -166,80 +158,6 @@ def main():
             log.error("Could not obtain text from %s" % filepath)
             continue
 
-        # Open output file
-        if not args.output:
-            ioc_filepath = filepath + '.iocs'
-            out_fd = open(ioc_filepath, "w")
-
-        # Get all matches without deduplication, if needed
-        if args.all:
-            # Get all matches
-            match_l = searcher.search_raw(text, targets=target_l)
-            # Remove overlaps if requested or computing the ranking
-            if args.nooverlaps:
-                match_l = searcher.remove_overlaps(match_l)
-            # Process matches
-            for m in sorted(match_l, key=lambda p : (p[2],-len(p[1]))):
-                log.info("%s\t%s @ %d Raw: %s" % (m[0], m[1],
-                                                  m[2], m[3]))
-                # Output match
-                out_fd.write("%s\t%s @ %d Raw: %s\n" % (m[0], m[1],
-                                                        m[2], m[3]))
-            # Close output file if needed
-            if not args.output:
-                out_fd.close()
-            # Finish processing this file as other steps deduplicate
-            continue
-
-        # Search file
-        matches = searcher.search_data(text,
-                                       targets=target_l,
-                                       no_overlaps=args.nooverlaps)
-        iocs.update(matches)
-
-        # Search for phone numbers
-        if args.phone:
-            phone_iocs = searcher.search_phone_numbers(text, args.phone)
-            iocs.update(phone_iocs)
-
-        # Search links for IOCs
-        if args.links:
-            if doc.is_html:
-                iocs.update(doc.get_html_link_iocs(searcher))
-            else:
-                log.warning("No links in non-HTML file")
-
-        # Extract schema.org IOCs
-        if args.schema:
-            if doc.is_html:
-                iocs.update(doc.get_html_schema_iocs(searcher))
-            else:
-                log.warning("No Schema.org data for non-HTML file")
-
-        # Extract metadata IOCs
-        if args.metadata:
-            metadata = doc.get_metadata()
-            log.info("Metadata = %s" % metadata)
-            iocs.update(doc.metadata_iocs(searcher, metadata))
-
-        # Extract script IOCs
-        if args.script:
-            if isinstance(doc, Html):
-                iocs.update(doc.get_html_script_iocs(searcher))
-            else:
-                log.warning("No Script data for non-HTML file")
-
-        # Output IOCs
-        for ioc in sorted(iocs):
-            log.info("%s" % ioc)
-            out_fd.write("%s\n" % ioc)
-
-        # Flush output file or close it
-        if args.output:
-            out_fd.flush()
-        else:
-            out_fd.close()
-
         # Output text to file
         if args.text:
             text_filepath = filepath + '.text'
@@ -255,18 +173,98 @@ def main():
             fd.write(normalized_text)
             fd.close()
 
+        # Get all matches without deduplication
+        if args.all:
+            # Get all matches
+            iocs = searcher.search_raw(text, targets=target_l)
+            # Remove overlaps if requested or computing the ranking
+            if args.nooverlaps:
+                iocs = searcher.remove_overlaps(match_l)
+        # Otherwise, get deduplicated IOCs
+        else:
+            iocs = set()
+            # Search file
+            matches = searcher.search_data(text,
+                                           targets=target_l,
+                                           no_overlaps=args.nooverlaps)
+            iocs.update(matches)
 
-        # Store IOCs
-        # all_iocs.update(iocs)
+            # Search for phone numbers
+            if args.phone:
+                phone_iocs = searcher.search_phone_numbers(text, args.phone)
+                iocs.update(phone_iocs)
 
-    #if args.output:
-    #    fd = open(args.output, "w")
-    #    for ioc in sorted(all_iocs):
-    #        fd.write("%s\n" % ioc)
-    #    fd.close()
+            # Search links for IOCs
+            if args.links:
+                if doc.is_html:
+                    iocs.update(doc.get_html_link_iocs(searcher))
+                else:
+                    log.warning("No links in non-HTML file")
 
-    # Close output file
+            # Extract schema.org IOCs
+            if args.schema:
+                if doc.is_html:
+                    iocs.update(doc.get_html_schema_iocs(searcher))
+                else:
+                    log.warning("No Schema.org data for non-HTML file")
+
+            # Extract metadata IOCs
+            if args.metadata:
+                metadata = doc.get_metadata()
+                log.info("Metadata = %s" % metadata)
+                iocs.update(doc.metadata_iocs(searcher, metadata))
+
+            # Extract script IOCs
+            if args.script:
+                if isinstance(doc, Html):
+                    iocs.update(doc.get_html_script_iocs(searcher))
+                else:
+                    log.warning("No Script data for non-HTML file")
+
+        # Output IOCs if no global output file
+        if iocs and not args.output:
+            # Open file
+            ioc_filepath = filepath + '.iocs'
+            out_fd = open(ioc_filepath, "w")
+
+            # Write IOCs
+            if args.all:
+                for m in sorted(iocs, key=lambda p : (p[2],-len(p[1]))):
+                    log.info("%s\t%s @ %d Raw: %s" % (m[0], m[1],
+                                                      m[2], m[3]))
+                    out_fd.write("%s\t%s @ %d Raw: %s\n" % (m[0], m[1],
+                                                            m[2], m[3]))
+            else:
+                for ioc in sorted(iocs):
+                    log.info("%s" % ioc)
+                    out_fd.write("%s\n" % ioc)
+
+            # Close file
+            out_fd.close()
+
+        # Store IOCs if global output file
+        if args.output:
+            if args.all:
+                all_raw_iocs[filepath] = iocs
+            else:
+                all_iocs.update(iocs)
+
+    # If global output file, output accumulated IOCs
     if args.output:
+        # Open output file
+        out_fd = open(args.output, "w", encoding='utf-8')
+
+        # Output IOCs
+        if args.all:
+            for filepath, matches in all_raw_iocs.items():
+                for m in matches:
+                    out_fd.write("%s\t%s @ %s:%d Raw: %s\n" % (
+                                  m[0], m[1], filepath, m[2], m[3]))
+        else:
+            for ioc in sorted(all_iocs):
+                out_fd.write("%s\n" % ioc)
+
+        # Close output file
         out_fd.close()
 
 
