@@ -1,0 +1,41 @@
+registry	HKCU\Control Panel\Desktop
+registry	HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders
+registry	HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths
+registry	HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+registry	HKCU\Software\Microsoft\Windows\CurrentVersion\RunMRU
+registry	HKCU\Software\Microsoft\Windows\CurrentVersion\RunOnce
+registry	HKCU\Software\Microsoft\Windows NT\CurrentVersion\Windows\Load
+registry	HKCU\Software\Microsoft\Windows NT\CurrentVersion\Windows\Run
+registry	HKCU\Volatile Environment
+registry	HKEY_CLASSES_ROOT\CLSID{GUID}
+registry	HKEY_CURRENT_USER\Software\Bitcoin\Bitcoin-Qt
+registry	HKEY_CURRENT_USER\Software\Classes\
+registry	HKEY_CURRENT_USER\Software\Classes\CLSID\
+registry	HKEY_CURRENT_USER\Software\Classes\mscfile\shell\open\command
+registry	HKEY_CURRENT_USER\Software\DC3_FEXEC
+registry	HKEY_CURRENT_USER\Software\Microsoft\Terminal Server Client\Default
+registry	HKEY_CURRENT_USER\SOFTWARE\Microsoft\WABE\DataPath
+registry	HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run\
+registry	HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\RunOnce
+registry	HKEY_CURRENT_USER\Software\Policies\Microsoft\PreviousVersions\DisableLocalPage
+registry	HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Pniumj
+registry	HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ControlPanel\NameSpace
+registry	HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\PrintConfigs
+registry	HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\Micromedia
+registry	HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\ShellCompatibility\Applications\laxhost.dll
+registry	HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options
+registry	HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SilentProcessExit\
+registry	HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows
+registry	HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows
+registry	HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager
+registry	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\BootExecute
+registry	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\WMI\Security
+registry	HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\W32Time\TimeProviders\
+registry	HKEY_USERS\Software\Microsoft\Windows\CurrentVersion\Run
+registry	HKLM\HARDWARE\DESCRIPTION\System\CentralProcessor\0
+registry	HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run
+registry	HKLM\Software\Microsoft\Windows\CurrentVersion\Run
+registry	HKLM\Software\Microsoft\Windows\CurrentVersion\RunOnce
+registry	HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion
+registry	HKLM\SYSTEM\CurrentControlSet\Control\ComputerName\ComputerName
+registry	HKLM\SYSTEM\CurrentControlSet\Services
