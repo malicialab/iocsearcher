@@ -137,26 +137,31 @@ def main():
     all_iocs = set()
     all_raw_iocs = {}
     for filepath in sorted(files):
-        log.info("Searching into %s" % filepath)
-
-        # Open document
-        if (not args.forcetext):
-            doc = open_document(filepath)
+        # Read data from standard input
+        if filepath == "-":
+            text = sys.stdin.read()
+        # Otherwise open file and get text
         else:
-            doc = Document(filepath, mime_type='text/plain')
-        if doc is None:
-            log.warning("Skipping unsupported file: %s" % filepath)
-            continue
+            log.info("Searching into %s" % filepath)
 
-        # Extract text
-        options = {
-                    'html_raw' : args.raw,
-                    'html_use_readability' : args.readability,
-                  }
-        text = doc.get_text(options=options)[0]
-        if not text:
-            log.error("Could not obtain text from %s" % filepath)
-            continue
+            # Open document
+            if (not args.forcetext):
+                doc = open_document(filepath)
+            else:
+                doc = Document(filepath, mime_type='text/plain')
+            if doc is None:
+                log.warning("Skipping unsupported file: %s" % filepath)
+                continue
+
+            # Extract text
+            options = {
+                        'html_raw' : args.raw,
+                        'html_use_readability' : args.readability,
+                      }
+            text = doc.get_text(options=options)[0]
+            if not text:
+                log.error("Could not obtain text from %s" % filepath)
+                continue
 
         # Output text to file
         if args.text:
