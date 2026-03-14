@@ -8,7 +8,6 @@ import os
 import sys
 import argparse
 import logging
-from collections import Counter
 from importlib.metadata import version
 from iocsearcher.ioc import create_ioc
 from iocsearcher.document import open_document
@@ -82,9 +81,6 @@ def main():
     argparser.add_argument('-P', '--patterns',
        help = 'Use patterns in this file instead of the default patterns.')
 
-    argparser.add_argument('-C', '--count', action='store_true',
-       help = 'Rank indicators by the number of times they appear.')
-
     argparser.add_argument('-N', '--normalize', action='store_true',
         help='store normalized text into file with .normalized extension')
 
@@ -147,7 +143,6 @@ def main():
         out_fd = None
 
     # Iterate on files
-    ioc_ctr = Counter()
     for filepath in sorted(files):
         log.info("Searching into %s" % filepath)
         iocs = set()
@@ -177,23 +172,19 @@ def main():
             out_fd = open(ioc_filepath, "w")
 
         # Get all matches without deduplication, if needed
-        if args.all or args.count:
+        if args.all:
             # Get all matches
             match_l = searcher.search_raw(text, targets=target_l)
             # Remove overlaps if requested or computing the ranking
-            if args.nooverlaps or args.count:
+            if args.nooverlaps:
                 match_l = searcher.remove_overlaps(match_l)
             # Process matches
             for m in sorted(match_l, key=lambda p : (p[2],-len(p[1]))):
                 log.info("%s\t%s @ %d Raw: %s" % (m[0], m[1],
                                                   m[2], m[3]))
-                # Increase counter if needed
-                if args.count:
-                    ioc_ctr[(m[0],m[1])] += 1
                 # Output match
-                else:
-                    out_fd.write("%s\t%s @ %d Raw: %s\n" % (m[0], m[1],
-                                                            m[2], m[3]))
+                out_fd.write("%s\t%s @ %d Raw: %s\n" % (m[0], m[1],
+                                                        m[2], m[3]))
             # Close output file if needed
             if not args.output:
                 out_fd.close()
@@ -273,15 +264,6 @@ def main():
     #    for ioc in sorted(all_iocs):
     #        fd.write("%s\n" % ioc)
     #    fd.close()
-
-    # Print ranking
-    if args.count:
-        ranking_fd = out_fd if args.output else sys.stdout
-        ranking_fd.write("ioc_type\tioc_value\tcount\n")
-        for (ioc_type,ioc_value), ctr in sorted(ioc_ctr.items(),
-                                                key=lambda e : e[1],
-                                                reverse=True):
-            ranking_fd.write("%s\t%s\t%d\n" % (ioc_type, ioc_value, ctr))
 
     # Close output file
     if args.output:

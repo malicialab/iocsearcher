@@ -121,13 +121,6 @@ each IOC without deduplication by using the _-v (--verbose)_ option:
 iocsearcher -f file.pdf -v
 ~~~
 
-You can also produce a ranking of IOCs by number of appearances
-(without deduplication) by using the _-C (--count)_ option:
-
-~~~ sh
-iocsearcher -f file.pdf -C -o rank.iocs
-~~~
-
 ## Library Usage
 
 You can also use _iocsearcher_ as a library by creating a
