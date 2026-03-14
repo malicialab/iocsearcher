@@ -43,6 +43,7 @@ youtubeHandle, youtubeChannel)
 - Spanish NIF identifiers (nif)
 - TOX identifiers (tox)
 - Amazon Resource Names (arn)
+- Registry keys (registry)
 
 ## Command Line Usage
 
