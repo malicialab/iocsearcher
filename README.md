@@ -59,6 +59,12 @@ iocsearcher -f document.docx
 iocsearcher -f input.txt
 ~~~
 
+You can also use iocsearcher to process standard input with the _-f -_ option:
+
+~~~ sh
+echo "My URL is https://www.github.com" | iocsearcher -f -
+~~~
+
 You can use the _-o (--output)_ option to place IOCs to a file instead
 of stdout:
 
