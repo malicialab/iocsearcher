@@ -87,7 +87,7 @@ can_normalize = {
 class Searcher:
     # Static regular expressions for rearming IOCs
     re_dots = re.compile(r'\[\.\]|\[\]|\(dot\)|\[dot\]|\(\.\)', re.I)
-    re_at = re.compile(r' at |\(at\)| \(at\) |\[at\]| \[at\] ', re.I)
+    re_at = re.compile(r' at |\(at\)| \(at\) |\[at\]| \[at\] |\[@\]|\(@\)', re.I)
     re_http = re.compile(r'^(hxxp|h___p|httx|hpp)', re.I)
     re_ethereum_nonchecksummed = re.compile(
                                     r"^(0x)?([0-9a-f]{40}|[0-9A-F]{40})$")
