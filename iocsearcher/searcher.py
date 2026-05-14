@@ -90,7 +90,7 @@ class Searcher:
     re_at = re.compile(r' at |\(at\)| \(at\) |\[at\]| \[at\] ', re.I)
     re_http = re.compile(r'^(hxxp|h___p|httx|hpp)', re.I)
     re_ethereum_nonchecksummed = re.compile(
-                                    "^(0x)?([0-9a-f]{40}|[0-9A-F]{40})$")
+                                    r"^(0x)?([0-9a-f]{40}|[0-9A-F]{40})$")
 
     def __init__(self, patterns_ini=None, tld_filepath=None, scheme_filepath=None,
                         create_ioc_fun=None):
@@ -274,7 +274,7 @@ class Searcher:
         """Check if given string is a valid TLD according to IANA list"""
         # To help address common issues such a period not followed by a space
         # we allow 'COM' and 'com', but not 'Com' and 'CoM'
-        if re.match('[A-Z][a-z]', s):
+        if re.match(r'[A-Z][a-z]', s):
             return False
         # Check that TLD in lowercase appears in IANA list
         s = s.lower()
@@ -283,7 +283,7 @@ class Searcher:
     def is_valid_fqdn(self, s):
         """Check if given string ends with valid TLD according to IANA"""
         # Check valid characters
-        if not re.match('^(\*\.)?[a-zA-Z0-9_\-\.]+$', s):
+        if not re.match(r'^(\*\.)?[a-zA-Z0-9_\-\.]+$', s):
             return False
         # Remove trailing dot if present
         if s[-1] == '.':
@@ -337,7 +337,7 @@ class Searcher:
         # The following local-part could in theory be valid
         # but most likely they are anonymized
         # Ignoring these ones is a trade-off
-        if re.match('^([xX\.]+|[\-]+|[_]+)$', tokens[0]):
+        if re.match(r'^([xX\.]+|[\-]+|[_]+)$', tokens[0]):
             return False
         return self.is_valid_fqdn(tokens[1])
 
@@ -426,7 +426,7 @@ class Searcher:
             return __class__.is_valid_ip6(parsed.hostname)
         elif (num_tokens == 4) and tokens[-1].isdigit():
             # Avoid ipNet
-            if re.match('/[0-9]{1,2}$', parsed.path):
+            if re.match(r'/[0-9]{1,2}$', parsed.path):
                 return False
             return __class__.is_valid_ip4(parsed.hostname)
         # Validate Onion URLs
@@ -504,13 +504,13 @@ class Searcher:
         """Extract entity from copyright string"""
         # Remove variations of: "All Rights Reserved", "copyright", "(c)", years
         regexp = re.compile(
-              "((?:[.\-,–;]+)?(?:[ ]+)?All Right[s]? Reserved( to|\.)?)|"
-              "((?:©|\(C\)|&copy;|\xA9)(?:\s+)?[.,\-]?)|"
-              "(@)|"
-              "([12][0-9]{3}\s?[--–—]\s?(?:[12][0-9]{3}|present)"
-                    "(?:\s+by)?(?:[\s.,\-\/]+)?)|"
-              "([12][0-9]{3}(?:\s+by)?(?:[\s.,\-\/]+)?)|"
-              "(CopyRight)",
+              r"((?:[.\-,–;]+)?(?:[ ]+)?All Right[s]? Reserved( to|\.)?)|"
+              r"((?:©|\(C\)|&copy;|\xA9)(?:\s+)?[.,\-]?)|"
+              r"(@)|"
+              r"([12][0-9]{3}\s?[--–—]\s?(?:[12][0-9]{3}|present)"
+              r"(?:\s+by)?(?:[\s.,\-\/]+)?)|"
+              r"([12][0-9]{3}(?:\s+by)?(?:[\s.,\-\/]+)?)|"
+              r"(CopyRight)",
               re.UNICODE | re.I)
         cleaned = regexp.sub('',  s).strip()
         return cleaned
@@ -802,7 +802,7 @@ class Searcher:
             pass
         # Otherwise, take a guess based on length
         if lax:
-            digit_str = re.sub('[^0-9]','', s)
+            digit_str = re.sub(r'[^0-9]','', s)
             l = len(digit_str)
             # Minimum length is 5 for some islands,
             # but most countries have at least 7 digits
@@ -938,7 +938,7 @@ class Searcher:
         """Reads regexps in INI file. Returns number of regexps added"""
         ctr = 0
         raw_patterns = {}
-        re_macro = re.compile("\(##([a-z0-9]+)##\)")
+        re_macro = re.compile(r"\(##([a-z0-9]+)##\)")
 
         # Read configuration file
         config = configparser.ConfigParser()
@@ -947,7 +947,7 @@ class Searcher:
         # Iterate on sections
         for sec in config.sections():
             # Read IOC name, i.e., section without trailing digits separated by hyphen
-            ioc_name = re.sub('\-[0-9]+$','', sec)
+            ioc_name = re.sub(r'\-[0-9]+$','', sec)
 
             # Read pattern
             try:
@@ -1178,7 +1178,7 @@ class Searcher:
             for match in matches:
                 # If have already found this string,
                 # skip as it cannot belong to multiple countries
-                digit_str = re.sub('[^0-9]','', match.raw_string)
+                digit_str = re.sub(r'[^0-9]','', match.raw_string)
                 if digit_str[-9:] in seen:
                     continue
                 seen.add(digit_str[-9:])

@@ -62,14 +62,14 @@ class Word(Document):
             text = flatten_text(r).strip()
             # Remove figure references
             if options.get('remove_figure_refs', True):
-                text = re.sub('----media\/[a-zA-Z0-9]+\.[a-z]{3,}----',
+                text = re.sub(r'----media\/[a-zA-Z0-9]+\.[a-z]{3,}----',
                               '', text)
             # Remove consecutive tabs
             if options.get('remove_consecutive_tabs', True):
-                text = re.sub('\n\t+', '\n', text)
+                text = re.sub(r'\n\t+', '\n', text)
             # Remove consecutive blank lines
             if options.get('remove_consecutive_blank_lines', True):
-                text = re.sub('(\r?\n){3,}', '\n\n', text)
+                text = re.sub(r'(\r?\n){3,}', '\n\n', text)
             if text:
                 elements.append(text)
         return (elements,'docs2python')

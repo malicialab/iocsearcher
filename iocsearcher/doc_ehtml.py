@@ -66,7 +66,7 @@ class ExtendedHtml(Html):
               url_iocs = searcher.search_data(value, targets={'twitterHandle'})
               if url_iocs:
                   iocs.update(url_iocs)
-              elif re.search("^@?[a-zA-Z0-9_]{3,15}$", value):
+              elif re.search(r"^@?[a-zA-Z0-9_]{3,15}$", value):
                   iocs.add(self.create_ioc("twitterHandle", value))
               else:
                   iocs.update(self.get_identity(searcher, value))
@@ -89,12 +89,12 @@ class ExtendedHtml(Html):
                   iocs.update(self.get_identity(searcher, value))
           elif key in ["apple-itunes-app", "twitter:app:id:iphone", 
                         "al:ios:app_store_id"]:
-              match = re.search("(?:app-id=|id)?(\d+)", value)
+              match = re.search(r"(?:app-id=|id)?(\d+)", value)
               if match:
                   iocs.add(self.create_ioc("appId", match.group(1),
                                       market="AppleStore"))
           elif key in ["google-play-app", "al:android:package"]:
-              match = re.search("(?:app-id=)?([A-Za-z][A-Za-z0-9_\.]+)", value)
+              match = re.search(r"(?:app-id=)?([A-Za-z][A-Za-z0-9_\.]+)", value)
               if match:
                   iocs.add(self.create_ioc("packageName", match.group(1),
                                       market="GooglePlay"))
@@ -200,7 +200,7 @@ class ExtendedHtml(Html):
                 continue
             # telephone
             if field == "telephone":
-                phone_str = re.sub('[^+0-9]','', value)
+                phone_str = re.sub(r'[^+0-9]','', value)
                 if phone_str:
                     iocs.add(self.create_ioc("phoneNumber", phone_str))
             # address
@@ -277,7 +277,7 @@ class ExtendedHtml(Html):
             elif field in ["telephone", "telePhone"]:
                 for v in l:
                     if v:
-                        phone_str = re.sub('[^+0-9]','', v)
+                        phone_str = re.sub(r'[^+0-9]','', v)
                         if phone_str:
                             iocs.add(self.create_ioc("phoneNumber", phone_str))
             # sameAs
@@ -376,7 +376,7 @@ class ExtendedHtml(Html):
         if (parsed_url.scheme and (parsed_url.scheme not in ['http', 'https'])):
             return None
         # Check for ZenDesk URLs
-        match = re.match("/hc/[^/]+/requests/new", parsed_url.path)
+        match = re.match(r"/hc/[^/]+/requests/new", parsed_url.path)
         if match:
             ioc_url = url
         # Check if link text contains keywords
@@ -414,11 +414,11 @@ class ExtendedHtml(Html):
         if (parsed_url.scheme and (parsed_url.scheme not in ['http', 'https'])):
             return None
         # Check if link text contains keywords
-        match = re.match("about", link.text, re.IGNORECASE)
+        match = re.match(r"about", link.text, re.IGNORECASE)
         if match:
             ioc_url = url
         # Check if URL contains keywords
-        match = re.search("about", url, re.IGNORECASE)
+        match = re.search(r"about", url, re.IGNORECASE)
         if match:
             ioc_url = url
         # Create IOC (add base URL if needed)
@@ -447,11 +447,11 @@ class ExtendedHtml(Html):
         if (parsed_url.scheme and (parsed_url.scheme not in ['http', 'https'])):
             return None
         # Check if link text contains keywords
-        match = re.match("terms", link.text, re.IGNORECASE)
+        match = re.match(r"terms", link.text, re.IGNORECASE)
         if match:
             ioc_url = url
         # Check if URL contains keywords
-        match = re.search("terms", url, re.IGNORECASE)
+        match = re.search(r"terms", url, re.IGNORECASE)
         if match:
             ioc_url = url
         # Create IOC (add base URL if needed)
@@ -480,11 +480,11 @@ class ExtendedHtml(Html):
         if (parsed_url.scheme and (parsed_url.scheme not in ['http', 'https'])):
             return None
         # Check if link text contains keywords
-        match = re.match("privacy", link.text, re.IGNORECASE)
+        match = re.match(r"privacy", link.text, re.IGNORECASE)
         if match:
             ioc_url = url
         # Check if URL contains keywords
-        match = re.search("privacy", url, re.IGNORECASE)
+        match = re.search(r"privacy", url, re.IGNORECASE)
         if match:
             ioc_url = url
         # Create IOC (add base URL if needed)
@@ -547,7 +547,7 @@ class ExtendedHtml(Html):
                     iocs.add(url_ioc)
             elif scheme == "tel":
                 value = url[idx+1:]
-                phone_str = re.sub('[^+0-9]','', value)
+                phone_str = re.sub(r'[^+0-9]','', value)
                 if phone_str:
                     found_ioc = self.create_ioc('phoneNumber', phone_str)
                     iocs.add(found_ioc)
@@ -562,7 +562,7 @@ class ExtendedHtml(Html):
                     value = url[idx+1:end_idx]
                 else:
                     value = url[idx+1:]
-                phone_str = re.sub('[^+0-9]','', value)
+                phone_str = re.sub(r'[^+0-9]','', value)
                 if phone_str:
                     found_ioc = self.create_ioc('phoneNumber', phone_str)
                     iocs.add(found_ioc)
@@ -603,11 +603,11 @@ class ExtendedHtml(Html):
             if (not has_digit):
                 continue
             # Replace EOF with comma
-            s = re.sub('\s*\n\s*', ', ', s)
+            s = re.sub(r'\s*\n\s*', ', ', s)
             # Some cleaning
-            s = re.sub('\s+,', ',', s)
-            s = re.sub('\s+', ' ', s)
-            s = re.sub(',[,]+', ',', s)
+            s = re.sub(r'\s+,', ',', s)
+            s = re.sub(r'\s+', ' ', s)
+            s = re.sub(r',[,]+', ',', s)
             # Create IOC
             found_ioc = self.create_ioc('physicalAddress', s)
             iocs.add(found_ioc)
