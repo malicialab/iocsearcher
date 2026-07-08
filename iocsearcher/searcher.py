@@ -84,6 +84,28 @@ can_normalize = {
     'youtubeHandle'
 }
 
+def has_matching_parentheses(s):
+    '''Return whether input string has matching parenthesis'''
+    parenthesis_count = 0
+    square_bracket_count = 0
+
+    for char in s:
+        if char == "(":
+            parenthesis_count += 1
+        elif char == ")":
+            parenthesis_count -= 1
+        elif char == "[":
+            square_bracket_count += 1
+        elif char == "]":
+            square_bracket_count -= 1
+
+        # Found a closing parenthesis before a matching opening one
+        if (parenthesis_count < 0) or (square_bracket_count < 0):
+            return False
+
+    # All opening parentheses must have been closed
+    return (parenthesis_count == 0) and (square_bracket_count == 0)
+
 class Searcher:
     # Static regular expressions for rearming IOCs
     re_dots = re.compile(r'\[\.\]|\[\]|\(dot\)|\[dot\]|\(\.\)', re.I)
@@ -417,6 +439,9 @@ class Searcher:
             return False
         # If no hostname, invalid
         if not parsed.hostname:
+            return False
+        # Check for matching parenthesis
+        if not has_matching_parentheses(s):
             return False
         # Parse hostname
         tokens = parsed.hostname.split('.')
