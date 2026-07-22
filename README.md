@@ -132,7 +132,7 @@ iocsearcher -f file.pdf -v
 You can also use _iocsearcher_ as a library by creating a
 _Searcher_ object and then invoking the functions
 _search_data_ to identify rearmed and deduplicated IOCs and
-_search_raw_ to identify all matches, their offsets, and the defanged string.
+_search_matches_ to identify all matches, their offsets, defanged/normalized value, and raw value.
 The _Searcher_ object needs to be created only once to parse the regexps.
 Then, it can be reused to find IOCs in multiple input strings.
 
@@ -142,12 +142,37 @@ python3
 >>> from iocsearcher.searcher import Searcher
 >>> test = 'Find this email contact[AT]example[dot]com'
 >>> searcher = Searcher()
->>> searcher.search_data(test)
-{('email', 'contact@example.com'), ('fqdn', 'example.com')}
+
+>>> iocs = searcher.search_data(test)
+>>> iocs
+{fqdn	example.com, email	contact@example.com}
+>>> type(iocs)
+<class 'set'>
+>>> ioc_l = list(iocs)
+>>> type(ioc_l[0])
+<class 'iocsearcher.ioc.Ioc'>
+>>> ioc_l[0].name
+'fqdn'
+>>> ioc_l[0].value
+'example.com'
 >>> searcher.search_data(test, targets={'email'})
-{('email', 'contact@example.com')}
->>> searcher.search_raw(test)
-[('email', 'contact@example.com', 16, 'contact[AT]example[dot]com'), ('fqdn', 'example.com', 27, 'example[dot]com')]
+{email	contact@example.com}
+
+>>> matches = searcher.search_matches(test)
+>>> matches
+[fqdn	example.com @ 27 Raw: example[dot]com, email	contact@example.com @ 16 Raw: contact[AT]example[dot]com]
+>>> type(matches[0])
+<class 'iocsearcher.ioc.IocMatch'>
+>>> matches[0].start_offset
+27
+>>> matches[0].name
+'fqdn'
+>>> matches[0].value
+'example.com'
+>>> matches[0].raw_value
+'example[dot]com'
+>>> matches[0].defanged
+True
 ~~~
 
 You can also open a document without needing to provide its type,
