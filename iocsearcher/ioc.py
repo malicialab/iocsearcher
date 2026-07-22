@@ -12,7 +12,7 @@ class IocMatch:
         self.start_offset = start_offset
         self.raw_value = raw_value
         self.rearmed_value = rearmed_value
-        self.normalized_value = normalized_value
+        self.value = normalized_value
         self.defanged = bool(raw_value != rearmed_value)
 
     def __len__(self):
@@ -41,21 +41,26 @@ class IocMatch:
 
     def __unicode__(self):
         """Unicode texttual representation of IocMatch"""
-        return (u"%s\t%s @ %d Raw: %s" % (self.name, self.normalized_value,
+        return (u"%s\t%s @ %d Raw: %s" % (self.name, self.value,
                                           self.start_offset, self.raw_value))
 
     def __repr__(self):
         """Textual representation of IocMatch"""
         return self.__unicode__()
 
+    @property
+    def ioc(self):
+        """Return defanged and normalized Ioc"""
+        return create_ioc(self.name, self.value)
+
     def json(self):
         """JSON representation of IocMatch"""
         data = {
-          'name' : self.name,
           'start_offset' : self.start_offset,
+          'name' : self.name,
+          'value' : self.value,
           'raw_value' : self.raw_value,
           'rearmed_value' : self.rearmed_value,
-          'normalized_value' : self.normalized_value,
         }
         return json.dumps(data, sort_keys=True, default=str)
 

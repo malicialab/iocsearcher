@@ -235,7 +235,7 @@ def main():
             # Write IOCs
             if args.all:
                 for raw_ioc in sorted(raw_iocs, key=lambda r : (
-                                      r.start_offset,-len(r.normalized_value))):
+                                      r.start_offset,-len(r.value))):
                     log.info(raw_ioc)
                     out_fd.write("%s\n" % (raw_ioc))
             else:

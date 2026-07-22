@@ -1171,7 +1171,7 @@ class Searcher:
             Returns list of (type, normalized_value, start_offset, raw_value)
             [DEPRECATED]. Kept for compatibility"""
         matches = self.search_matches(data, targets=targets)
-        return [ (m.name, m.normalized_value, m.start_offset, m.raw_value) \
+        return [ (m.name, m.value, m.start_offset, m.raw_value) \
                   for m in matches ]
 
     def search_data(self, data, targets=None, no_overlaps=False):
@@ -1189,10 +1189,10 @@ class Searcher:
         for m in matches:
             # Create IOC
             try:
-                found_ioc = self.create_ioc(m.name, m.normalized_value)
+                found_ioc = self.create_ioc(m.name, m.value)
             except ValueError:
                 log.warning("Failed to create IOC %s %s" % (
-                              m.name, m.normalized_value))
+                              m.name, m.value))
                 continue
             # Store IOC
             results.add(found_ioc)
@@ -1303,7 +1303,7 @@ class Searcher:
             # Replace raw value with macro at all positions
             new_text = new_text.replace(m.raw_value, macro)
             # Store replacement info
-            replacements[macro] = (m.name, m.normalized_value, m.raw_value)
+            replacements[macro] = (m.name, m.value, m.raw_value)
         # Return text and replacement info
         return new_text, replacements
 
