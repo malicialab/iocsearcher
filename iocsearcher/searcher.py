@@ -131,7 +131,7 @@ class Searcher:
             self.create_ioc = iocsearcher.ioc.create_ioc
         # Read TLDs
         self.tlds = self.read_tlds(self.tld_filepath)
-        self.tlds.add("onion")
+        #self.tlds.add("onion")
         log.debug("Read %d TLDs" % len(self.tlds))
         # Read URL schemes
         self.schemes = self.read_schemes(self.scheme_filepath)
@@ -333,8 +333,8 @@ class Searcher:
         # Get TLD
         tld = labels[-1]
         # Special handling of .onion domains
-        if (tld == 'onion'):
-            return self.is_valid_onionAddress(labels[-2])
+        #if (tld == 'onion'):
+        #    return self.is_valid_onionAddress(labels[-2])
         # Filter domains that are all in lowercase,
         # except for the first character of the TLD
         # This may happen when the text does not place a space after a period
