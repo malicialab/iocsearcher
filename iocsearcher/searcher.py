@@ -1102,7 +1102,7 @@ class Searcher:
         return num_patterns
 
     def search_matches(self, data, targets=None):
-        """Apply targets regexps to input data. Returns list of RawIoc"""
+        """Apply targets regexps to input data. Returns IocMatch list"""
         results = []
         # Select targets
         if targets is None:
@@ -1156,13 +1156,13 @@ class Searcher:
                     else:
                         normalized_value = rearmed_value
 
-                    # Create RawIoc
-                    raw_ioc = iocsearcher.ioc.RawIoc(
+                    # Create IocMatch
+                    ioc_match = iocsearcher.ioc.IocMatch(
                                       ioc_name, start_offset, raw_value,
                                       rearmed_value, normalized_value)
 
-                    # Store RawIoc
-                    results.append(raw_ioc)
+                    # Store IocMatch
+                    results.append(ioc_match)
 
         return results
 
@@ -1170,9 +1170,9 @@ class Searcher:
         """Apply targets regexps to input data,
             Returns list of (type, normalized_value, start_offset, raw_value)
             [DEPRECATED]. Kept for compatibility"""
-        raw_ioc_l = self.search_matches(data, targets=targets)
-        return [ (i.name, i.normalized_value, i.start_offset, i.raw_value) \
-                  for i in raw_ioc_l ]
+        matches = self.search_matches(data, targets=targets)
+        return [ (m.name, m.normalized_value, m.start_offset, m.raw_value) \
+                  for m in matches ]
 
     def search_data(self, data, targets=None, no_overlaps=False):
         """Wrapper for search_matches that:
@@ -1247,22 +1247,22 @@ class Searcher:
         return self.search_data(url, url_targets)
 
     @staticmethod
-    def remove_overlaps(l):
-        """Remove overlapping indicators. Assumes input is RawIoc list
-           Returns list of RawIoc without overlaps
+    def remove_overlaps(matches):
+        """Remove overlapping indicators. Assumes input is IocMatch list
+           Returns IocMatch list without overlaps
         """
         # Sort list by (start_offset, length of raw_value, type)
-        l.sort(key=lambda e : (e.start_offset,-len(e.raw_value), e.name))
+        matches.sort(key=lambda e : (e.start_offset,-len(e.raw_value), e.name))
         # Create an interval tree to identify IOC overlaps
         t = IntervalTree()
-        # Accumulator for list of IOCs that will be reported
+        # Accumulator for matches that will be reported
         acc = []
-        # Iterate over the input IOCs
-        for raw_ioc in l:
+        # Iterate over the input matches
+        for m in matches:
             # Compute IOC end
             # IntervalTree uses ranges of type [start,end)
-            length = len(raw_ioc.raw_value)
-            start = raw_ioc.start_offset
+            length = len(m.raw_value)
+            start = m.start_offset
             end = start + length
             # Check for overlapping fields already in IntervalTree
             overlaps = t.overlap(start,end)
@@ -1274,37 +1274,36 @@ class Searcher:
                     should_add = False
             # If not contained, include it
             if should_add:
-                acc.append(raw_ioc)
+                acc.append(m)
             # Add IOC to IntervalTree
-            t[start:end] = raw_ioc
+            t[start:end] = m
         # Return non-overlapping fields
         return acc
 
     def normalize_text(self, text, targets=None, macros=None):
         """Normalize text replacing IOCs with macros"""
-        # Extract raw matches
-        raw_matches = self.search_matches(text, targets=targets)
+        # Extract matches
+        matches = self.search_matches(text, targets=targets)
         # Remove overlaps
-        raw_matches = self.remove_overlaps(raw_matches)
+        matches = self.remove_overlaps(matches)
         # Replace matches with macros
         ioc_cnt = {}
         replacements = {}
         new_text = text
-        for raw_ioc in raw_matches:
+        for m in matches:
             # Select appropriate macro
-            macro = macros.get(raw_ioc.name, None) if macros else None
+            macro = macros.get(m.name, None) if macros else None
             if macro is None:
-                ctr = ioc_cnt.get(raw_ioc.name, 0)
+                ctr = ioc_cnt.get(m.name, 0)
                 if ctr == 0:
-                    macro = "<%s>" % raw_ioc.name.upper()
+                    macro = "<%s>" % m.name.upper()
                 else:
-                    macro = "<%s%d>" % (raw_ioc.name.upper(), ctr)
-                ioc_cnt[raw_ioc.name] = ctr + 1
+                    macro = "<%s%d>" % (m.name.upper(), ctr)
+                ioc_cnt[m.name] = ctr + 1
             # Replace raw value with macro at all positions
-            new_text = new_text.replace(raw_ioc.raw_value, macro)
+            new_text = new_text.replace(m.raw_value, macro)
             # Store replacement info
-            replacements[macro] = (raw_ioc.name, raw_ioc.normalized_value,
-                                    raw_ioc.raw_value)
+            replacements[macro] = (m.name, m.normalized_value, m.raw_value)
         # Return text and replacement info
         return new_text, replacements
 

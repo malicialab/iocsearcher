@@ -4,8 +4,8 @@
 #
 import json
 
-class RawIoc:
-    """A raw IOC as it was found on text, prior to deduplication"""
+class IocMatch:
+    """A IOC as matched on text, prior to deduplication"""
     def __init__(self, name, start_offset, raw_value, rearmed_value,
                   normalized_value):
         self.name = name
@@ -20,14 +20,14 @@ class RawIoc:
         return len(self.raw_value)
 
     def __eq__(self, other):
-        """Two RawIoc considered the same if same start_offset and raw_value.
+        """Two IocMatch considered the same if same start_offset and raw_value.
            They could still come from different texts
         """
         return ((self.start_offset == other.start_offset) and
                 (self.raw_value == other.raw_value))
 
     def __lt__(self, other):
-        """Compare RawIoc based on start_offset.
+        """Compare IocMatch based on start_offset.
            If same start_offset, compare raw_value.
         """
         if (self.start_offset == other.start_offset):
@@ -36,20 +36,20 @@ class RawIoc:
             return (self.start_offset < other.start_offset)
 
     def __hash__(self):
-        """RawIoc is uniquely identified by start_offset and raw_value"""
+        """IocMatch is uniquely identified by start_offset and raw_value"""
         return hash((self.start_offset, self.raw_value))
 
     def __unicode__(self):
-        """Unicode texttual representation of IocRaw"""
+        """Unicode texttual representation of IocMatch"""
         return (u"%s\t%s @ %d Raw: %s" % (self.name, self.normalized_value,
                                           self.start_offset, self.raw_value))
 
     def __repr__(self):
-        """Textual representation of IocRaw"""
+        """Textual representation of IocMatch"""
         return self.__unicode__()
 
     def json(self):
-        """JSON representation of IocRaw"""
+        """JSON representation of IocMatch"""
         data = {
           'name' : self.name,
           'start_offset' : self.start_offset,
@@ -60,7 +60,7 @@ class RawIoc:
         return json.dumps(data, sort_keys=True, default=str)
 
     def defanged(self):
-        """Returns whether IocRaw was defanged in the text"""
+        """Returns whether IocMatch was defanged in the text"""
         return self.defanged
 
 class Ioc:
