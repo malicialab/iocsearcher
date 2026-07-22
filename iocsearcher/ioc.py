@@ -41,8 +41,8 @@ class RawIoc:
 
     def __unicode__(self):
         """Unicode texttual representation of IocRaw"""
-        return (u"%s\t%s @ %d Raw: %s\n" % (self.name, self_normalized_value,
-                                            self.start_offset, self.raw_value))
+        return (u"%s\t%s @ %d Raw: %s" % (self.name, self.normalized_value,
+                                          self.start_offset, self.raw_value))
 
     def __repr__(self):
         """Textual representation of IocRaw"""

@@ -181,10 +181,10 @@ def main():
         # Get all matches without deduplication
         if args.all:
             # Get all matches
-            iocs = searcher.search_raw(text, targets=target_l)
+            raw_iocs = searcher.search_matches(text, targets=target_l)
             # Remove overlaps if requested or computing the ranking
             if args.nooverlaps:
-                iocs = searcher.remove_overlaps(match_l)
+                raw_iocs = searcher.remove_overlaps(raw_iocs)
         # Otherwise, get deduplicated IOCs
         else:
             iocs = set()
@@ -227,18 +227,17 @@ def main():
                     log.warning("No Script data for non-HTML file")
 
         # Output IOCs if no global output file
-        if iocs and not args.output:
+        if not args.output:
             # Open file
             ioc_filepath = filepath + '.iocs'
             out_fd = open(ioc_filepath, "w")
 
             # Write IOCs
             if args.all:
-                for m in sorted(iocs, key=lambda p : (p[2],-len(p[1]))):
-                    log.info("%s\t%s @ %d Raw: %s" % (m[0], m[1],
-                                                      m[2], m[3]))
-                    out_fd.write("%s\t%s @ %d Raw: %s\n" % (m[0], m[1],
-                                                            m[2], m[3]))
+                for raw_ioc in sorted(raw_iocs, key=lambda r : (
+                                      r.start_offset,-len(r.normalized_value))):
+                    log.info(raw_ioc)
+                    out_fd.write("%s\n" % (raw_ioc))
             else:
                 for ioc in sorted(iocs):
                     log.info("%s" % ioc)

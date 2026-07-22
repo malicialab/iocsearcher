@@ -1175,13 +1175,13 @@ class Searcher:
                   for i in raw_ioc_l ]
 
     def search_data(self, data, targets=None, no_overlaps=False):
-        """Wrapper for search_raw that:
+        """Wrapper for search_matches that:
             (1) Builds IOCs on the returned rearmed value
             (2) Removes duplicated IOCs that appeared at different positions
             Returns a set of IOCs"""
         results = set()
         # Scan text with regexp
-        matches = self.search_raw(data, targets)
+        matches = self.search_matches(data, targets)
         # Remove overlaps if needed
         if no_overlaps:
             matches = self.remove_overlaps(matches)
@@ -1189,9 +1189,10 @@ class Searcher:
         for m in matches:
             # Create IOC
             try:
-                found_ioc = self.create_ioc(m[0], m[1])
+                found_ioc = self.create_ioc(m.name, m.normalized_value)
             except ValueError:
-                log.warning("Failed to create IOC %s %s" % (m[0], m[1]))
+                log.warning("Failed to create IOC %s %s" % (
+                              m.name, m.normalized_value))
                 continue
             # Store IOC
             results.add(found_ioc)
@@ -1247,20 +1248,21 @@ class Searcher:
 
     @staticmethod
     def remove_overlaps(l):
-        """Remove overlapping indicators
-            Assumes input is list of (type, rearmed_val, start_off, raw_val)
+        """Remove overlapping indicators. Assumes input is RawIoc list
+           Returns list of RawIoc without overlaps
         """
-        # Sort list by (start,length of raw_value,type)
-        l.sort(key=lambda e : (e[2],-len(e[3]), e[0]))
+        # Sort list by (start_offset, length of raw_value, type)
+        l.sort(key=lambda e : (e.start_offset,-len(e.raw_value), e.name))
         # Create an interval tree to identify IOC overlaps
         t = IntervalTree()
         # Accumulator for list of IOCs that will be reported
         acc = []
         # Iterate over the input IOCs
-        for (ioc_type, rearmed_value, start, raw_value) in l:
+        for raw_ioc in l:
             # Compute IOC end
             # IntervalTree uses ranges of type [start,end)
-            length = len(raw_value)
+            length = len(raw_ioc.raw_value)
+            start = raw_ioc.start_offset
             end = start + length
             # Check for overlapping fields already in IntervalTree
             overlaps = t.overlap(start,end)
@@ -1272,36 +1274,37 @@ class Searcher:
                     should_add = False
             # If not contained, include it
             if should_add:
-                acc.append((ioc_type, rearmed_value, start, raw_value))
+                acc.append(raw_ioc)
             # Add IOC to IntervalTree
-            t[start:end] = (ioc_type, rearmed_value, start, raw_value)
+            t[start:end] = raw_ioc
         # Return non-overlapping fields
         return acc
 
     def normalize_text(self, text, targets=None, macros=None):
         """Normalize text replacing IOCs with macros"""
         # Extract raw matches
-        raw_matches = self.search_raw(text, targets=targets)
+        raw_matches = self.search_matches(text, targets=targets)
         # Remove overlaps
         raw_matches = self.remove_overlaps(raw_matches)
         # Replace matches with macros
         ioc_cnt = {}
         replacements = {}
         new_text = text
-        for ioc_type, ioc_value, start, raw_value in raw_matches:
+        for raw_ioc in raw_matches:
             # Select appropriate macro
-            macro = macros.get(ioc_type, None) if macros else None
+            macro = macros.get(raw_ioc.name, None) if macros else None
             if macro is None:
-                ctr = ioc_cnt.get(ioc_type, 0)
+                ctr = ioc_cnt.get(raw_ioc.name, 0)
                 if ctr == 0:
-                    macro = "<%s>" % ioc_type.upper()
+                    macro = "<%s>" % raw_ioc.name.upper()
                 else:
-                    macro = "<%s%d>" % (ioc_type.upper(), ctr)
-                ioc_cnt[ioc_type] = ctr + 1
+                    macro = "<%s%d>" % (raw_ioc.name.upper(), ctr)
+                ioc_cnt[raw_ioc.name] = ctr + 1
             # Replace raw value with macro at all positions
-            new_text = new_text.replace(raw_value, macro)
+            new_text = new_text.replace(raw_ioc.raw_value, macro)
             # Store replacement info
-            replacements[macro] = (ioc_type, ioc_value, raw_value)
+            replacements[macro] = (raw_ioc.name, raw_ioc.normalized_value,
+                                    raw_ioc.raw_value)
         # Return text and replacement info
         return new_text, replacements
 
