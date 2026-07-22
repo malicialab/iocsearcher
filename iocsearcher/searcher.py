@@ -1101,9 +1101,8 @@ class Searcher:
         # Return number of patterns added
         return num_patterns
 
-    def search_raw(self, data, targets=None):
-        """Apply targets regexps to input data,
-            Returns list of (type, rearmed_value, start_offset, raw_value)"""
+    def search_matches(self, data, targets=None):
+        """Apply targets regexps to input data. Returns list of RawIoc"""
         results = []
         # Select targets
         if targets is None:
@@ -1157,10 +1156,23 @@ class Searcher:
                     else:
                         normalized_value = rearmed_value
 
-                    # Store result tuple (name,value,start,raw_value)
-                    results.append((ioc_name, normalized_value,
-                                    start_offset, raw_value))
+                    # Create RawIoc
+                    raw_ioc = iocsearcher.ioc.RawIoc(
+                                      ioc_name, start_offset, raw_value,
+                                      rearmed_value, normalized_value)
+
+                    # Store RawIoc
+                    results.append(raw_ioc)
+
         return results
+
+    def search_raw(self, data, targets=None):
+        """Apply targets regexps to input data,
+            Returns list of (type, normalized_value, start_offset, raw_value)
+            [DEPRECATED]. Kept for compatibility"""
+        raw_ioc_l = self.search_matches(data, targets=targets)
+        return [ (i.name, i.normalized_value, i.start_offset, i.raw_value) \
+                  for i in raw_ioc_l ]
 
     def search_data(self, data, targets=None, no_overlaps=False):
         """Wrapper for search_raw that:

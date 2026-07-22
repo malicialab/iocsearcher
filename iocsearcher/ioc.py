@@ -4,8 +4,67 @@
 #
 import json
 
-# Base IOC class
+class RawIoc:
+    """A raw IOC as it was found on text, prior to deduplication"""
+    def __init__(self, name, start_offset, raw_value, rearmed_value,
+                  normalized_value):
+        self.name = name
+        self.start_offset = start_offset
+        self.raw_value = raw_value
+        self.rearmed_value = rearmed_value
+        self.normalized_value = normalized_value
+        self.defanged = bool(raw_value != rearmed_value)
+
+    def __len__(self):
+        """The length is the the one of the raw_value"""
+        return len(self.raw_value)
+
+    def __eq__(self, other):
+        """Two RawIoc considered the same if same start_offset and raw_value.
+           They could still come from different texts
+        """
+        return ((self.start_offset == other.start_offset) and
+                (self.raw_value == other.raw_value))
+
+    def __lt__(self, other):
+        """Compare RawIoc based on start_offset.
+           If same start_offset, compare raw_value.
+        """
+        if (self.start_offset == other.start_offset):
+            return (self.raw_value < other.raw_value)
+        else:
+            return (self.start_offset < other.start_offset)
+
+    def __hash__(self):
+        """RawIoc is uniquely identified by start_offset and raw_value"""
+        return hash((self.start_offset, self.raw_value))
+
+    def __unicode__(self):
+        """Unicode texttual representation of IocRaw"""
+        return (u"%s\t%s @ %d Raw: %s\n" % (self.name, self_normalized_value,
+                                            self.start_offset, self.raw_value))
+
+    def __repr__(self):
+        """Textual representation of IocRaw"""
+        return self.__unicode__()
+
+    def json(self):
+        """JSON representation of IocRaw"""
+        data = {
+          'name' : self.name,
+          'start_offset' : self.start_offset,
+          'raw_value' : self.raw_value,
+          'rearmed_value' : self.rearmed_value,
+          'normalized_value' : self.normalized_value,
+        }
+        return json.dumps(data, sort_keys=True, default=str)
+
+    def defanged(self):
+        """Returns whether IocRaw was defanged in the text"""
+        return self.defanged
+
 class Ioc:
+    """An IOC after deduplication"""
     def __init__(self, name, value, attributes=None):
         self.name = name
         self.value = value
