@@ -457,6 +457,9 @@ class Searcher:
         # Validate Onion URLs
         elif tokens[-1] == 'onion':
             return self.is_valid_onionAddress(tokens[-2])
+        # Accept all I2P/Lokinet URLs
+        elif tokens[-1] in ['i2p', 'loki']:
+            return True
         # Validate URLs with FQDN
         else:
             return self.is_valid_fqdn(parsed.hostname)
